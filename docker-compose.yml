@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:14.13 #latest  !15.6
+    container_name: app_postgres
+    environment:
+      POSTGRES_USER: ${USER_DB}
+      POSTGRES_PASSWORD: ${PASSWORD_DB}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - db-network
+
+#  bot:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.bot
+#     container_name: telegram_bot
+#     environment:
+#       POSTGRES_HOST: postgres
+#       POSTGRES_USER: ${USER_DB}
+#       POSTGRES_PASSWORD: ${PASSWORD_DB}
+#       POSTGRES_DB: ${DB_NAME}
+#     depends_on:
+#       - postgres
+#     networks:
+#       - db-network
+#     ports:
+#       - "8080:80"  # Публикация порта 80 контейнера на порт 8080 хоста
+
+volumes:
+  postgres_data:
+
+networks:
+  db-network:
+    driver: bridge

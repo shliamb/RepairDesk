@@ -1,0 +1,9 @@
+aiogram==3.3.0
+python-dotenv==1.1.1
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+
+
+
+# pip install -r requirements.txt
