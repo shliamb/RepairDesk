@@ -16,4 +16,4 @@ RUN apt-get update && apt-get install -y apt-utils \
 
 COPY . .
 
-CMD ["python", "app/run_bot.py"]
+CMD ["python", "app/bot.py"]

@@ -19,42 +19,44 @@ def create_tables_in_db():
         # Create table:
         create_table_users = '''
         CREATE TABLE IF NOT EXISTS users (
-            user_id VARCHAR PRIMARY KEY,        -- обфусцированный HMAC, вернуть обратно не выйдет
-            block BOOLEAN DEFAULT FALSE,
-            dialog_agent VARCHAR,               -- Диалог с агентом
-            dialog_seo VARCHAR,                 -- Диалог с SEO агентами !!! Пока что не использую, на всякий случай..
+            user_id UUID PRIMARY KEY UNIQUE NOT NULL,       -- UUID value
+            user_glotmax VARCHAR(20) UNIQUE,
+            user_whatsapp VARCHAR(20) UNIQUE,
+            user_telegram BIGINT UNIQUE,                    -- telegram id
+            phone VARCHAR(20) UNIQUE,
+            email VARCHAR(20) UNIQUE,
+            surname VARCHAR(50),                            -- фамилия
+            name VARCHAR(50),
+            description_user VARCHAR(200),
+            source VARCHAR(200),                            -- источник рекламы
+            block BOOLEAN DEFAULT FALSE,                    -- блок пид..ов
+            hum_quality VARCHAR(50),          
             last_visit TIMESTAMP,
+            time_reg TIMESTAMP,
             time_zone VARCHAR(10), 
             language VARCHAR(10),
-            system_contents JSONB,              -- Разные инструкции для агентов в JSON
-            rewrite INT,                        -- Максимально возможное колличество переписывания текста агентом
-            format_text VARCHAR(50),
-            model VARCHAR(50),
-            format_file VARCHAR(50),
+            admin BOOLEAN DEFAULT FALSE,
+            super_admin BOOLEAN DEFAULT FALSE,
+            system JSONB,
             paid INT DEFAULT 0,
-            intermediate BOOLEAN,               -- Вывод промежуточных данных, True - выводит
-            money FLOAT
         );
-        -- CREATE INDEX idx_ai ON users(ai);
-        CREATE INDEX IF NOT EXISTS idx_system_contents ON users USING gin (system_contents jsonb_path_ops);
-        CREATE INDEX idx_user_user_id ON users(user_id);
         '''
         # Executing an SQL query:
         cursor.execute(create_table_users)
 
-        create_table_statistics = '''
-        CREATE TABLE IF NOT EXISTS statistics (
+        create_table_orders = '''
+        CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
             date TIMESTAMP,
             model VARCHAR(50),
             tokens INTEGER,
             price_1 FLOAT,
             price FLOAT,
-            user_id VARCHAR,
+            user_id UUID,
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
         '''
-        cursor.execute(create_table_statistics)
+        cursor.execute(create_table_orders)
 
         create_table_methods_pay = '''
         CREATE TABLE IF NOT EXISTS methods_pay (
