@@ -1,6 +1,6 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from app.database.worker_db import WorkerDB  # Только для аннотации типа!
+from database.worker_db import WorkerDB  # Только для аннотации типа!
 
 router = Router()
 

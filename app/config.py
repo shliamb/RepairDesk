@@ -5,7 +5,8 @@ load_dotenv()
 
 
 #### BASIC CONFIG (set it up manually): ####
-DOCKER = False # True or False
+DOCKER = False 
+LOG_TO_FILE = False
 HOST = "app_postgres" if DOCKER else  "localhost" # app_postgres localhost
 TIME_CORRECTION = + 3
 MAX_SIZE_DOC = 2 # 2 мегабайт
@@ -13,13 +14,12 @@ MAX_SIZE_DOC = 2 # 2 мегабайт
 
 
 # Folders:
-PATH_LOGS = "/logs/" if DOCKER else "logs/"
+PATH_LOGS = "/logs" if DOCKER else "logs"
 #PATH_LOGS = "/logs/" if DOCKER else "../logs/"
 # DOWNLOAD = "/downloads/" if DOCKER else "../downloads/"
 # PATH_JSON_USERS = "/json/" if DOCKER else "../json/"
 # OUTPUT = "/output/" if DOCKER else "../output/"
 # SYST_CONT_FOLDER = "/" if DOCKER else "../"
-
 
 
 # .env:
@@ -29,8 +29,6 @@ PASSWORD_DB = os.environ.get('PASSWORD_DB')
 DB_NAME = os.environ.get('POSTGRES_DB')
 ADMIN_ID = int(os.environ.get('admin_id'))
 KEY_API_DEEPSEEK = os.environ.get('key_api_deepseek')
-
-
 
 
 # class Settings(BaseSettings):

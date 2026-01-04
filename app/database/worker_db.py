@@ -1,13 +1,12 @@
 from config import PATH_LOGS, HOST, ADMIN_ID, USER_DB, PASSWORD_DB, DB_NAME
-from logs.set_logger import setup_logger
-logger_db = setup_logger('db', f'{PATH_LOGS}db.log')
+from logs.set_logger import set_logger
 import json
 import asyncpg
 import asyncio
 from contextlib import asynccontextmanager
 
  
-
+logger = set_logger(name="db")
 
 
 class WorkerDB:
@@ -29,7 +28,7 @@ class WorkerDB:
                 max_queries=50000, # после 50к запросов - пересоздать соединение
                 timeout=30 # ждать свободное соединение 30 секунд
             )
-            logger_db.info("Database pool created")
+            logger.info("Database pool created")
         return self.pool
     
     
@@ -38,7 +37,7 @@ class WorkerDB:
         if self.pool:
             await self.pool.close()
             self.pool = None
-            logger_db.info("Database pool closed")
+            logger.info("Database pool closed")
 
 
     async def get_pool_stats(self):
@@ -71,12 +70,12 @@ class WorkerDB:
     async def add_user(self, user_data: dict) -> bool:
         """ Adding User data to Db """
         if not user_data:
-            logger_db.error("Error add_user: User_data is empty.")
+            logger.error("Error add_user: User_data is empty.")
             return False
         
         user_id = user_data.get("user_id")
         if not user_id:
-            logger_db.error("Error add_user: Where is user_id?")
+            logger.error("Error add_user: Where is user_id?")
             return False
         
         # Подготавливаем запрос
@@ -101,7 +100,7 @@ class WorkerDB:
                 )
             return True
         except Exception as e:
-            logger_db.error(f"Error add_user: {e}")
+            logger.error(f"Error add_user: {e}")
             return False
 
 
@@ -136,11 +135,11 @@ class WorkerDB:
 #     user_id = user_data.get("user_id")
 
 #     if not user_id:
-#         logger_db.error("Error add_user: Where is user_id?")
+#         logger.error("Error add_user: Where is user_id?")
 #         return False
 
 #     if len(user_data) < 1:  # if there is at least a user_id, let's go
-#         logger_db.error("Error add_user: User_data is empty.")
+#         logger.error("Error add_user: User_data is empty.")
 #         return False
 
 #     for key, value in user_data.items():
@@ -163,7 +162,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error add_user: {e}")
+#         logger.error(f"Error add_user: {e}")
 #         return False
 
 #     finally:
@@ -211,7 +210,7 @@ class WorkerDB:
 #         )
 #         return True
 #     except Exception as e:
-#         logger_db.error(f"Error update_jsonb_field: {e}")
+#         logger.error(f"Error update_jsonb_field: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -264,7 +263,7 @@ class WorkerDB:
 #         return dict(*result)
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_user: {e}")
+#         logger.error(f"Error read_user: {e}")
 #         return False
 
 #     finally:
@@ -289,7 +288,7 @@ class WorkerDB:
 #         )
 #         return json.loads(result) if result else None
 #     except Exception as e:
-#         logger_db.error(f"Error get_jsonb_field: {e}")
+#         logger.error(f"Error get_jsonb_field: {e}")
 #         return None
 #     finally:
 #         if connection:
@@ -307,11 +306,11 @@ class WorkerDB:
 #     user_id = user_data.get("user_id")
 
 #     if not user_id:
-#         logger_db.error("Error update_user: Where is user_id?")
+#         logger.error("Error update_user: Where is user_id?")
 #         return False
 
 #     if len(user_data) <= 1:  # At a minimum, we need user_id + at least one element of the change.
-#         logger_db.error("Error update_user: User_data is empty or contains a single entry.")
+#         logger.error("Error update_user: User_data is empty or contains a single entry.")
 #         return False
 
 #     for key, value in user_data.items():
@@ -334,7 +333,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error update_user: {e}")
+#         logger.error(f"Error update_user: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -371,7 +370,7 @@ class WorkerDB:
 #         )
 
 #         if not result:
-#             logger_db.error("The methodt pay is empty, sorry.")
+#             logger.error("The methodt pay is empty, sorry.")
 #             return False
 
 #         data = []
@@ -380,7 +379,7 @@ class WorkerDB:
 #         return data
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_all_methods_pay: {e}")
+#         logger.error(f"Error read_all_methods_pay: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -400,11 +399,11 @@ class WorkerDB:
 #     connection = None
 #     try:
 #         if type(title) != str:
-#             logger_db.error("Error: input data is not str (title method pay.)")
+#             logger.error("Error: input data is not str (title method pay.)")
 #             return False
 
 #         if not title:
-#             logger_db.error("Error: Title method pay is Empty or None.")
+#             logger.error("Error: Title method pay is Empty or None.")
 #             return False
 
 #         connection = await get_connection()
@@ -421,7 +420,7 @@ class WorkerDB:
 #         return dict(*result)
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_one_methods_pay: {e}")
+#         logger.error(f"Error read_one_methods_pay: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -433,7 +432,7 @@ class WorkerDB:
 #     connection = None
 #     try:
 #         if type(id) != int:
-#             logger_db.error("Error: input data is not int (id method pay.)")
+#             logger.error("Error: input data is not int (id method pay.)")
 #             return False
 
 #         connection = await get_connection()
@@ -450,7 +449,7 @@ class WorkerDB:
 #         return dict(*result)
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_one_methods_pay_by_id: {e}")
+#         logger.error(f"Error read_one_methods_pay_by_id: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -475,7 +474,7 @@ class WorkerDB:
 #         return dict(*result)
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_one_methods_pay_by_use: {e}")
+#         logger.error(f"Error read_one_methods_pay_by_use: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -494,11 +493,11 @@ class WorkerDB:
 #     connection = None
 #     try:
 #         if type(id) != int:
-#             logger_db.error("Error: input data is not int (id method pay.)")
+#             logger.error("Error: input data is not int (id method pay.)")
 #             return False
 
 #         if not id:
-#             logger_db.error("Error: Title method pay is Empty or None.")
+#             logger.error("Error: Title method pay is Empty or None.")
 #             return False
 
 #         connection = await get_connection()
@@ -512,7 +511,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error deleted_one_methods_pay: {e}")
+#         logger.error(f"Error deleted_one_methods_pay: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -524,7 +523,7 @@ class WorkerDB:
 #     keys_list, values_list, num_list, i, connection = [], [], [], 1, None
 
 #     if len(pay_data) <= 1:
-#         logger_db.error("Error: User_data is empty.")
+#         logger.error("Error: User_data is empty.")
 #         return False
 
 #     for key, value in pay_data.items():
@@ -547,7 +546,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error add_methods_pay: {e}")
+#         logger.error(f"Error add_methods_pay: {e}")
 #         return False
 
 #     finally:
@@ -562,11 +561,11 @@ class WorkerDB:
 #     id = pay_data.get("id")
 
 #     if not id:
-#         logger_db.error("Error update_methods_pay: Where is id?")
+#         logger.error("Error update_methods_pay: Where is id?")
 #         return False
 
 #     if len(pay_data) <= 1:  # At a minimum, we need id + at least one element of the change.
-#         logger_db.error("Error update_methods_pay: pay_data is empty or contains a single entry.")
+#         logger.error("Error update_methods_pay: pay_data is empty or contains a single entry.")
 #         return False
 
 #     for key, value in pay_data.items():
@@ -590,7 +589,7 @@ class WorkerDB:
 
 
 #     except Exception as e:
-#         logger_db.error(f"Error update_methods_pay: {e}")
+#         logger.error(f"Error update_methods_pay: {e}")
 #         return False
 
 #     finally:
@@ -688,7 +687,7 @@ class WorkerDB:
 #         )
 
 #         if not result:
-#             logger_db.error("Users not pay.")
+#             logger.error("Users not pay.")
 #             return False
 
 #         data = []
@@ -701,7 +700,7 @@ class WorkerDB:
 #         return data
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_all_payments: {e}")
+#         logger.error(f"Error read_all_payments: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -718,11 +717,11 @@ class WorkerDB:
 #     keys_list, values_list, num_list, i, connection = [], [], [], 1, None
 
 #     if len(payments) <= 1:
-#         logger_db.error("Error: User_data is empty.")
+#         logger.error("Error: User_data is empty.")
 #         return False
 
 #     if payments.get("user_id") is None:
-#         logger_db.error("Error: User_id is empty.")
+#         logger.error("Error: User_id is empty.")
 #         return False
 
 #     for key, value in payments.items():
@@ -745,7 +744,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error add_payments: {e}")
+#         logger.error(f"Error add_payments: {e}")
 #         return False
 
 #     finally:
@@ -766,7 +765,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error deleted_all_payments: {e}")
+#         logger.error(f"Error deleted_all_payments: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -809,11 +808,11 @@ class WorkerDB:
 #     user_id = statistics_data.get("user_id")
 
 #     if not user_id:
-#         logger_db.error("Error add_statistics: Where is user_id?")
+#         logger.error("Error add_statistics: Where is user_id?")
 #         return False
 
 #     if len(statistics_data) < 1:  # if there is at least a user_id, let's go
-#         logger_db.error("Error add_statistics: Statistics_data is empty.")
+#         logger.error("Error add_statistics: Statistics_data is empty.")
 #         return False
 
 #     for key, value in statistics_data.items():
@@ -836,7 +835,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error add_statistics: {e}")
+#         logger.error(f"Error add_statistics: {e}")
 #         return False
 
 #     finally:
@@ -876,7 +875,7 @@ class WorkerDB:
 #         return data
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_statistics: {e}")
+#         logger.error(f"Error read_statistics: {e}")
 #     finally:
 #         if connection:
 #             await connection.close()
@@ -897,7 +896,7 @@ class WorkerDB:
 #     # date_now = функция получения даты + какое то условие, что бы давался лимит 3 месяца допустим
 
 #     if not date_now:
-#         logger_db.error("Error date: Today's date has not been received")
+#         logger.error("Error date: Today's date has not been received")
 #         return False
 
 #     try:
@@ -911,7 +910,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error clear_statistics {e}")
+#         logger.error(f"Error clear_statistics {e}")
 #         return False
 
 #     finally:
@@ -933,7 +932,7 @@ class WorkerDB:
 #         return True
 
 #     except Exception as e:
-#         logger_db.error(f"Error fast_delete_statistics_tab {e}")
+#         logger.error(f"Error fast_delete_statistics_tab {e}")
 #         return False
 
 #     finally:
@@ -965,7 +964,7 @@ class WorkerDB:
 #         return data
 
 #     except Exception as e:
-#         logger_db.error(f"Error read_all_users: {e}")
+#         logger.error(f"Error read_all_users: {e}")
 #     finally:
 #         if connection:
 #             await connection.close()
@@ -1000,7 +999,7 @@ class WorkerDB:
 #         return data
 
 #     except Exception as e:
-#         logger_db.error(f"Error json_old_users: {e}")
+#         logger.error(f"Error json_old_users: {e}")
 #         return False
 #     finally:
 #         if connection:
@@ -1022,7 +1021,7 @@ class WorkerDB:
 #         await connection.execute("GRANT ALL ON SCHEMA public TO PUBLIC;")
 #         return True
 #     except Exception as e:
-#         logger_db.error(f"Error in drop_all_tables_and_reset_schema: {e}")
+#         logger.error(f"Error in drop_all_tables_and_reset_schema: {e}")
 #         return False
 #     finally:
 #         if connection:

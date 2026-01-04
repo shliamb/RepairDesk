@@ -1,13 +1,20 @@
+from config import PATH_LOGS
 from aiogram import Router, types
-from aiogram.filters import Command, CommandStart
-from app.database.worker_db import WorkerDB  # Только для аннотации типа!
+from aiogram.filters import CommandStart
+from database.worker_db import WorkerDB  # Только для аннотации типа!
 import uuid
+
+
+from logs.set_logger import set_logger
+logger = set_logger(name="db")
 
 router = Router()
 
 @router.message(CommandStart())
 async def start_router(message: types.Message, db: WorkerDB):
     await message.answer("Я теперь в отдельном файле!")
+    logger.error("Я теперь в отдельном файле!")
+    logger.info("Я теперь в отдельном файле!")
     # # db автоматически придет из контекста dp['db']
     # user_exists = await db.check_user(message.from_user.id)
     

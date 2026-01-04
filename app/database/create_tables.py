@@ -1,12 +1,16 @@
-from config import USER_DB, PASSWORD_DB, DB_NAME, PATH_LOGS, HOST
+from config import USER_DB, PASSWORD_DB, DB_NAME, HOST
 import psycopg2
-from logs.set_logger import setup_logger
-logger_db = setup_logger('db', f'{PATH_LOGS}db.log')
+from logs.set_logger import set_logger
+logger = set_logger(name="db")
+
+
 
 
 # Create TABLES:
 def create_tables_in_db():
     connection, cursor = False, False
+
+    print(USER_DB, PASSWORD_DB)
 
     try:
         # Connect to db:
@@ -81,12 +85,12 @@ def create_tables_in_db():
 
         # Saving changes:
         connection.commit()
-        logger_db.info("Adding tables is done!")
+        logger.info("Adding tables is done!")
         print("Adding tables is done!")
         return True
 
     except Exception as error:
-        logger_db.error(f"Error Create Tables in DB: {error}")
+        logger.error(f"Error Create Tables in DB: {error}")
         print("Error Create Tables in DB:", error)
         return False
 
@@ -99,7 +103,7 @@ def create_tables_in_db():
         if connection:
             connection.close()
 
-create_tables_in_db()
+# create_tables_in_db()
 
 
 # VARCHAR(n) - строковый тип данных ограничение n, TEXT - строковый тип данных ограничение в 1Гб.

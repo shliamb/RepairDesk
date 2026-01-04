@@ -1,29 +1,29 @@
 from config import TELEGRAM_BOT_TOKEN, PATH_LOGS, ADMIN_ID
-from logs.set_logger import setup_logger
-logger_bot = setup_logger('bot', f'{PATH_LOGS}bot.log')
+from logs.set_logger import set_logger
 import asyncio
-import asyncpg
-import json
-from pathlib import Path
-import csv
+# import asyncpg
+# import json
+# from pathlib import Path
+# import csv
 # import docx
 # import PyPDF2
-import io
-import random
+# import io
+# import random
 from aiogram import Bot, Dispatcher, Router, types, F
-from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, BotCommand, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
+# from aiogram.filters import CommandStart, Command
+# from aiogram.types import Message, BotCommand, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+# from aiogram.fsm.context import FSMContext
+# from aiogram.fsm.state import State, StatesGroup
 from routers import ALL_ROUTERS
-from common import day_utcnow
-from app.database.worker_db import WorkerDB
+# from common import day_utcnow
+from database.worker_db import WorkerDB
 
 
 
 bot = Bot(TELEGRAM_BOT_TOKEN, parse_mode="markdown")
 dp = Dispatcher()
 db = WorkerDB()
+logger = set_logger(name="bot")
 
 # Инициализация роутеров автоматом из routers.py
 main_router = Router()
@@ -32,6 +32,7 @@ for router in ALL_ROUTERS:
 dp.include_router(main_router)
 
 
+# logger.error("HI")
 
 
 
@@ -182,7 +183,7 @@ async def forced_start(message: types.Message)-> None:
 async def main_bot() -> None:
     # 1. Подключаемся к БД
     await db.connect()
-    logger_bot.info("Database connected")
+    #logger_bot.info("Database connected")
     
     # 2. Можно добавить db в контекст диспетчера
     dp['db'] = db
@@ -196,14 +197,15 @@ async def main_bot() -> None:
     finally:
         # 4. Всегда закрываем соединение
         await db.close()
-        logger_bot.info("Database connection closed")
+        #logger_bot.info("Database connection closed")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main_bot())
     except KeyboardInterrupt:
-        logger_bot.info("Bot stopped by user")
+        #logger_bot.info("Bot stopped by user")
+        pass
     except Exception as e:
-        logger_bot.error(f"Unexpected error: {e}")
+        #logger_bot.error(f"Unexpected error: {e}")
         print(f"An error occurred: {e}")

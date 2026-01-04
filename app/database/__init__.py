@@ -1,4 +1,4 @@
-from common import Database
+from database.common import Database
 
 # Создаём глобальный экземпляр
 db = Database()

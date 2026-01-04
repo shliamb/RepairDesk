@@ -8,9 +8,9 @@ import base64
 import aiofiles
 import asyncio
 # from io import BytesIO
-from app.logs.set_logger import setup_logger
 
-logger_bot = setup_logger('bot', f'{PATH_LOGS}bot.log')
+from logs.set_logger import set_logger
+logger = set_logger(name="bot")
 
 # from worker_db import add_statistics, update_user
 
@@ -32,7 +32,7 @@ async def day_utcnow():
     a = a + timedelta(hours=TIME_CORRECTION)
     day_str = a.strftime("%Y-%m-%d %H:%M:%S")
     day = datetime.strptime(day_str, '%Y-%m-%d %H:%M:%S')
-    # logger_bot.info("info: Getting the day and time from the server")
+    # logger.info("info: Getting the day and time from the server")
     return day or None
 
 
@@ -49,10 +49,10 @@ async def remove_file_os(file_path):
 
     if await loop.run_in_executor(None, os.path.exists, file_path):
         await loop.run_in_executor(None, os.remove, file_path)
-        logger_bot.info(f"The {file_path} file was successfully deleted.")
+        logger.info(f"The {file_path} file was successfully deleted.")
         return True
     else:
-        logger_bot.error(f"The {file_path} file does not exist.")
+        logger.error(f"The {file_path} file does not exist.")
         return False
 
 
@@ -77,6 +77,6 @@ def random_name() -> str:
 
 
 
-# logger_bot.error("fdf")
+# logger.error("fdf")
 
 # print(f'{PATH_LOGS}bot.log')
