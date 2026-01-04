@@ -1,8 +1,6 @@
-from keys import USER_DB, PASSWORD_DB, DB_NAME
-from config import HOST, PATH_LOGS
+from config import USER_DB, PASSWORD_DB, DB_NAME, PATH_LOGS, HOST
 import psycopg2
-from set_logger import setup_logger
-
+from logs.set_logger import setup_logger
 logger_db = setup_logger('db', f'{PATH_LOGS}db.log')
 
 
@@ -101,7 +99,7 @@ def create_tables_in_db():
         if connection:
             connection.close()
 
-# create_tables_in_db()
+create_tables_in_db()
 
 
 # VARCHAR(n) - строковый тип данных ограничение n, TEXT - строковый тип данных ограничение в 1Гб.

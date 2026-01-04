@@ -8,7 +8,7 @@ import base64
 import aiofiles
 import asyncio
 # from io import BytesIO
-from set_logger import setup_logger
+from app.logs.set_logger import setup_logger
 
 logger_bot = setup_logger('bot', f'{PATH_LOGS}bot.log')
 

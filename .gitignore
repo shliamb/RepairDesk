@@ -1,5 +1,8 @@
 .env
 .venv/
-__pycache__/
+app/__pycache__/
 logs/bot.log
 logs/db.log
+app/handlers/__pycache__
+app/database/__pycache__
+app/test.py
