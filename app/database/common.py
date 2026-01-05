@@ -48,11 +48,9 @@ class Database:
         """Получить статистику пула"""
         if not self.pool:
             return "Пул не инициализирован. Вызовите await db.connect()"
-        
         size = await self.pool.get_size()
         used = await self.pool.get_current_connection_count()
         free = size - used
-        
         return {
             "total": size,
             "used": used,
@@ -67,17 +65,29 @@ class Database:
         async with self.pool.acquire() as conn:
             return await conn.fetch(query, *args)
     
+
     async def fetchrow(self, query, *args):
         """Получить одну строку"""
         await self._ensure_connected()
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, *args)
     
+
     async def execute(self, query, *args):
         """Выполнить запрос (INSERT/UPDATE/DELETE)"""
         await self._ensure_connected()
         async with self.pool.acquire() as conn:
             return await conn.execute(query, *args)
+
+
+
+
+
+
+
+
+
+
 
     
     # async def insert(self, table: str, data: dict) -> bool:

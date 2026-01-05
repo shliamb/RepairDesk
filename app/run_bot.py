@@ -1,8 +1,15 @@
 from config import TELEGRAM_BOT_TOKEN, ADMIN_ID
 from logs.set_logger import set_logger
+logger = set_logger(name="bot")
 from routers import ALL_ROUTERS
 from database import db
 import asyncio
+from aiogram import Bot, Dispatcher, Router, types, F
+# from aiogram.filters import CommandStart, Command
+# from aiogram.types import Message, BotCommand, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+# from aiogram.fsm.context import FSMContext
+# from aiogram.fsm.state import State, StatesGroup
+# from common import day_utcnow
 # import asyncpg
 # import json
 # from pathlib import Path
@@ -11,19 +18,14 @@ import asyncio
 # import PyPDF2
 # import io
 # import random
-from aiogram import Bot, Dispatcher, Router, types, F
-# from aiogram.filters import CommandStart, Command
-# from aiogram.types import Message, BotCommand, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.fsm.context import FSMContext
-# from aiogram.fsm.state import State, StatesGroup
-# from common import day_utcnow
+
 
 
 
 
 bot = Bot(TELEGRAM_BOT_TOKEN, parse_mode="markdown")
 dp = Dispatcher()
-logger = set_logger(name="bot")
+
 
 # Инициализация роутеров автоматом из routers.py
 main_router = Router()

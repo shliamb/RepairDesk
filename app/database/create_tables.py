@@ -35,28 +35,30 @@ def create_tables_in_db():
             time_reg TIMESTAMP,
             time_zone VARCHAR(10), 
             language VARCHAR(10),
-            system JSONB
+            system JSONB,
+            admin BOOLEAN DEFAULT FALSE,
+            manager BOOLEAN DEFAULT FALSE
         );
         '''
         # Executing an SQL query:
         cursor.execute(create_table_users)
 
 
-        create_table_managers = '''
-        CREATE TABLE IF NOT EXISTS managers (
-            manager_id BIGINT PRIMARY KEY,                  -- manager_id = telegram id
-            surname VARCHAR(50) NOT NULL,                   -- фамилия
-            name VARCHAR(50),
-            description_manager VARCHAR(200),       
-            last_visit TIMESTAMP,
-            time_reg TIMESTAMP,
-            time_zone VARCHAR(10), 
-            language VARCHAR(10),
-            admin BOOLEAN DEFAULT FALSE,
-            system JSONB
-        );
-        '''
-        cursor.execute(create_table_managers)
+        # create_table_managers = '''
+        # CREATE TABLE IF NOT EXISTS managers (
+        #     manager_id BIGINT PRIMARY KEY,                  -- manager_id = telegram id
+        #     surname VARCHAR(50) NOT NULL,                   -- фамилия
+        #     name VARCHAR(50),
+        #     description_manager VARCHAR(200),       
+        #     last_visit TIMESTAMP,
+        #     time_reg TIMESTAMP,
+        #     time_zone VARCHAR(10), 
+        #     language VARCHAR(10),
+        #     admin BOOLEAN DEFAULT FALSE,
+        #     system JSONB
+        # );
+        # '''
+        # cursor.execute(create_table_managers)
 
         create_table_orders = '''
         CREATE TABLE IF NOT EXISTS orders (

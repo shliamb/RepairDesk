@@ -1,107 +1,107 @@
-from config import PATH_LOGS, HOST, ADMIN_ID, USER_DB, PASSWORD_DB, DB_NAME
-from logs.set_logger import set_logger
-import json
-import asyncpg
-import asyncio
-from contextlib import asynccontextmanager
+# from config import PATH_LOGS, HOST, ADMIN_ID, USER_DB, PASSWORD_DB, DB_NAME
+# from logs.set_logger import set_logger
+# import json
+# import asyncpg
+# import asyncio
+# from contextlib import asynccontextmanager
 
  
-logger = set_logger(name="db")
+# logger = set_logger(name="db")
 
 
-class WorkerDB:
-    """ Work to data in DB """
-    def __init__(self):
-        self.pool = None
+# class WorkerDB:
+#     """ Work to data in DB """
+#     def __init__(self):
+#         self.pool = None
 
 
-    async def connect(self):
-        """ Создаем пул при запуске бота """
-        if self.pool is None:
-            self.pool = await asyncpg.create_pool(
-                host=HOST,
-                database=DB_NAME,
-                user=USER_DB,
-                password=PASSWORD_DB,
-                min_size=5, # 5 соединений всегда готовы
-                max_size=50, # максимум 50 одновременных
-                max_queries=50000, # после 50к запросов - пересоздать соединение
-                timeout=30 # ждать свободное соединение 30 секунд
-            )
-            logger.info("Database pool created")
-        return self.pool
+#     async def connect(self):
+#         """ Создаем пул при запуске бота """
+#         if self.pool is None:
+#             self.pool = await asyncpg.create_pool(
+#                 host=HOST,
+#                 database=DB_NAME,
+#                 user=USER_DB,
+#                 password=PASSWORD_DB,
+#                 min_size=5, # 5 соединений всегда готовы
+#                 max_size=50, # максимум 50 одновременных
+#                 max_queries=50000, # после 50к запросов - пересоздать соединение
+#                 timeout=30 # ждать свободное соединение 30 секунд
+#             )
+#             logger.info("Database pool created")
+#         return self.pool
     
     
-    async def close(self):
-        """ Закрываем пул при остановке """
-        if self.pool:
-            await self.pool.close()
-            self.pool = None
-            logger.info("Database pool closed")
+#     async def close(self):
+#         """ Закрываем пул при остановке """
+#         if self.pool:
+#             await self.pool.close()
+#             self.pool = None
+#             logger.info("Database pool closed")
 
 
-    async def get_pool_stats(self):
-        """Получить статистику пула"""
-        if not self.pool:
-            return "Пул не инициализирован. Вызовите await db.connect()"
+#     async def get_pool_stats(self):
+#         """Получить статистику пула"""
+#         if not self.pool:
+#             return "Пул не инициализирован. Вызовите await db.connect()"
         
-        size = await self.pool.get_size()
-        used = await self.pool.get_current_connection_count()
-        free = size - used
+#         size = await self.pool.get_size()
+#         used = await self.pool.get_current_connection_count()
+#         free = size - used
         
-        return {
-            "total": size,
-            "used": used,
-            "free": free,
-            "free_percent": (free / size * 100) if size > 0 else 0
-        }
+#         return {
+#             "total": size,
+#             "used": used,
+#             "free": free,
+#             "free_percent": (free / size * 100) if size > 0 else 0
+#         }
 
 
-    @asynccontextmanager
-    async def get_connection(self):
-        """ Контекстный менеджер для удобства """
-        if not self.pool:
-            raise RuntimeError("Database pool not initialized. Call db.connect() first")
+#     @asynccontextmanager
+#     async def get_connection(self):
+#         """ Контекстный менеджер для удобства """
+#         if not self.pool:
+#             raise RuntimeError("Database pool not initialized. Call db.connect() first")
         
-        async with self.pool.acquire() as conn:
-            yield conn
+#         async with self.pool.acquire() as conn:
+#             yield conn
     
 
-    async def add_user(self, user_data: dict) -> bool:
-        """ Adding User data to Db """
-        if not user_data:
-            logger.error("Error add_user: User_data is empty.")
-            return False
+#     async def add_user(self, user_data: dict) -> bool:
+#         """ Adding User data to Db """
+#         if not user_data:
+#             logger.error("Error add_user: User_data is empty.")
+#             return False
         
-        user_id = user_data.get("user_id")
-        if not user_id:
-            logger.error("Error add_user: Where is user_id?")
-            return False
+#         user_id = user_data.get("user_id")
+#         if not user_id:
+#             logger.error("Error add_user: Where is user_id?")
+#             return False
         
-        # Подготавливаем запрос
-        keys = []
-        values = []
-        placeholders = []
+#         # Подготавливаем запрос
+#         keys = []
+#         values = []
+#         placeholders = []
         
-        for i, (key, value) in enumerate(user_data.items(), 1):
-            keys.append(key)
-            values.append(value)
-            placeholders.append(f"${i}")
+#         for i, (key, value) in enumerate(user_data.items(), 1):
+#             keys.append(key)
+#             values.append(value)
+#             placeholders.append(f"${i}")
         
-        columns = ", ".join(keys)
-        ph = ", ".join(placeholders)
+#         columns = ", ".join(keys)
+#         ph = ", ".join(placeholders)
         
-        try:
-            # Используем контекстный менеджер
-            async with self.get_connection() as conn:
-                await conn.execute(
-                    f"INSERT INTO users ({columns}) VALUES ({ph})",
-                    *values
-                )
-            return True
-        except Exception as e:
-            logger.error(f"Error add_user: {e}")
-            return False
+#         try:
+#             # Используем контекстный менеджер
+#             async with self.get_connection() as conn:
+#                 await conn.execute(
+#                     f"INSERT INTO users ({columns}) VALUES ({ph})",
+#                     *values
+#                 )
+#             return True
+#         except Exception as e:
+#             logger.error(f"Error add_user: {e}")
+#             return False
 
 
 
