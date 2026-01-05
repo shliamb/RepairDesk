@@ -1,5 +1,7 @@
-from config import TELEGRAM_BOT_TOKEN, PATH_LOGS, ADMIN_ID
+from config import TELEGRAM_BOT_TOKEN, ADMIN_ID
 from logs.set_logger import set_logger
+from routers import ALL_ROUTERS
+from database import db
 import asyncio
 # import asyncpg
 # import json
@@ -14,15 +16,13 @@ from aiogram import Bot, Dispatcher, Router, types, F
 # from aiogram.types import Message, BotCommand, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 # from aiogram.fsm.context import FSMContext
 # from aiogram.fsm.state import State, StatesGroup
-from routers import ALL_ROUTERS
 # from common import day_utcnow
-from database.worker_db import WorkerDB
+
 
 
 
 bot = Bot(TELEGRAM_BOT_TOKEN, parse_mode="markdown")
 dp = Dispatcher()
-db = WorkerDB()
 logger = set_logger(name="bot")
 
 # Инициализация роутеров автоматом из routers.py
@@ -185,8 +185,8 @@ async def main_bot() -> None:
     await db.connect()
     #logger_bot.info("Database connected")
     
-    # 2. Можно добавить db в контекст диспетчера
-    dp['db'] = db
+    # # 2. Можно добавить db в контекст диспетчера
+    # dp['db'] = db
 
     
     # 3. Запускаем бота

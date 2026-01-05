@@ -10,8 +10,6 @@ logger = set_logger(name="db")
 def create_tables_in_db():
     connection, cursor = False, False
 
-    print(USER_DB, PASSWORD_DB)
-
     try:
         # Connect to db:
         connection = psycopg2.connect(host=HOST, database=DB_NAME, user=USER_DB, password=PASSWORD_DB)

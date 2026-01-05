@@ -1,6 +1,6 @@
+# __init__.py
 from database.common import Database
 
-# Создаём глобальный экземпляр
-db = Database()
+db = Database() # Создаём глобальный экземпляр на весь проект
 
-__all__ = ['db']
+__all__ = ['db'] # Говорим Python: "из этого модуля экспортируй только 'db'"
