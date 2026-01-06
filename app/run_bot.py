@@ -18,6 +18,7 @@ from aiogram import Bot, Dispatcher, Router, types, F
 # import PyPDF2
 # import io
 # import random
+from database.create_tables import create_tables_in_db
 
 
 
@@ -35,7 +36,7 @@ dp.include_router(main_router)
 
 
 # logger.error("HI")
-
+# create_tables_in_db()
 
 
 

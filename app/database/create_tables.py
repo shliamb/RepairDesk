@@ -44,22 +44,6 @@ def create_tables_in_db():
         cursor.execute(create_table_users)
 
 
-        # create_table_managers = '''
-        # CREATE TABLE IF NOT EXISTS managers (
-        #     manager_id BIGINT PRIMARY KEY,                  -- manager_id = telegram id
-        #     surname VARCHAR(50) NOT NULL,                   -- фамилия
-        #     name VARCHAR(50),
-        #     description_manager VARCHAR(200),       
-        #     last_visit TIMESTAMP,
-        #     time_reg TIMESTAMP,
-        #     time_zone VARCHAR(10), 
-        #     language VARCHAR(10),
-        #     admin BOOLEAN DEFAULT FALSE,
-        #     system JSONB
-        # );
-        # '''
-        # cursor.execute(create_table_managers)
-
         create_table_orders = '''
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
@@ -72,11 +56,9 @@ def create_tables_in_db():
             cost DECIMAL(10, 2),
             user_id UUID NOT NULL,
             manager_id BIGINT NOT NULL,
-            FOREIGN KEY (manager_id) REFERENCES managers(manager_id),
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
             CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
-            CREATE INDEX IF NOT EXISTS idx_orders_manager_id ON orders(manager_id);
             CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
             CREATE INDEX IF NOT EXISTS idx_orders_serial ON orders(serial_number);
         '''
