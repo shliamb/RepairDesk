@@ -1,3 +1,4 @@
+#! handlers/start.py
 from config import ADMIN_ID
 from aiogram import Router, types
 from aiogram.filters import CommandStart
@@ -36,6 +37,7 @@ class FormStart(StatesGroup):
 
 @router.message(FormStart.captcha)
 async def registration_telegram_user(message: types.Message, state: FSMContext) -> None:
+    """ Проверка капчи тупой и добавление пользователя """
     await typing(message)
     send_data = await state.get_data()
     cldata = send_data.get("send_data")
@@ -94,6 +96,7 @@ async def registration_telegram_user(message: types.Message, state: FSMContext) 
 #### Push /start ####
 @router.message(CommandStart())
 async def start_router(message: types.Message, state: FSMContext):
+    """ Нажатие /start """
     await typing(message)
 
     if message.from_user.is_bot:
@@ -105,7 +108,7 @@ async def start_router(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     user = await get_user_by_tg(user_id)
 
-    print(user)
+    # print(user)
 
     if user:
         lang = user.get("language", message.from_user.language_code)

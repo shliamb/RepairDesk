@@ -6,5 +6,7 @@ logs/db.log
 app/handlers/__pycache__
 app/database/__pycache__
 app/logs/__pycache__
+app/keyboards/__pycache__
+app/utils/__pycache__
 app/test.py
 

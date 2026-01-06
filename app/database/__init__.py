@@ -1,4 +1,4 @@
-# __init__.py
+#! database/__init__.py
 from database.common import Database
 
 db = Database() # Создаём глобальный экземпляр на весь проект
