@@ -1,7 +1,7 @@
 from config import TELEGRAM_BOT_TOKEN, ADMIN_ID
 from logs.set_logger import set_logger
 logger = set_logger(name="bot")
-from routers import ALL_ROUTERS
+from handlers import ALL_ROUTERS
 from database import db
 import asyncio
 from aiogram import Bot, Dispatcher, Router, types, F

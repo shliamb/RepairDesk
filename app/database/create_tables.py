@@ -19,25 +19,27 @@ def create_tables_in_db():
         # Create table:
         create_table_users = '''
         CREATE TABLE IF NOT EXISTS users (
-            user_id UUID PRIMARY KEY,       -- UUID value
-            user_glotmax VARCHAR(50) UNIQUE,
-            user_whatsapp VARCHAR(50) UNIQUE,
-            user_telegram BIGINT UNIQUE,                    -- telegram id
+            user_id UUID PRIMARY KEY,                                                           -- UUID value
+            user_glotmax VARCHAR(50) UNIQUE,                                                    -- MAX ебать его в рот..
+            user_whatsapp VARCHAR(50) UNIQUE,                                                   -- WatsApp земля ему пухом..
+            user_telegram BIGINT UNIQUE,                                                        -- Telegram id
+            username_telegram VARCHAR(50) UNIQUE,                                               -- Telegram Username @name
             phone VARCHAR(20) UNIQUE,
             email VARCHAR(100) UNIQUE,
-            surname VARCHAR(50),                            -- фамилия
             name VARCHAR(50),
-            description_user VARCHAR(200),
-            source VARCHAR(200),                            -- источник рекламы
-            block BOOLEAN DEFAULT FALSE,                    -- блок пид..ов
-            hum_quality VARCHAR(50),          
-            last_visit TIMESTAMP,
-            time_reg TIMESTAMP,
+            description_user VARCHAR(200),                                                      -- Описание пользователя, для внутреннего использования
+            source VARCHAR(200),                                                                -- Источник рекламы
+            block BOOLEAN DEFAULT FALSE,                                                        -- Блок для пид..ов
+            hum_quality VARCHAR(50),                                                            -- Бывает полезно, когда повторные обращения - экономит время и нервы   
+            last_visit TIMESTAMP,                                                               -- Последнее посещение
+            time_reg TIMESTAMP,                                                                 -- Время регистрации
             time_zone VARCHAR(10), 
             language VARCHAR(10),
-            system JSONB,
+            parametrs JSONB,                                                                    -- На будующее, пока хз
             admin BOOLEAN DEFAULT FALSE,
-            manager BOOLEAN DEFAULT FALSE
+            manager BOOLEAN DEFAULT FALSE,
+            master BOOLEAN DEFAULT FALSE,
+            remind JSONB                                                                        -- Напоминалка, позже можно замутить..
         );
         '''
         # Executing an SQL query:
@@ -48,17 +50,29 @@ def create_tables_in_db():
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
             serial_number VARCHAR(50),
-            status VARCHAR(50) DEFAULT 'new',
-            device_type VARCHAR(50),
-            device VARCHAR(100),
-            description TEXT,                               -- описание проблемы
-            date TIMESTAMP,
-            cost DECIMAL(10, 2),
-            user_id UUID NOT NULL,
-            manager_id BIGINT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
+            status VARCHAR(50),                                                                 -- Статус заказа (новый, в работе, готов..)
+            order_type VARCHAR(50),                                                             -- Тип заказа (Платный, гарантийный)
+            device_type VARCHAR(50),                                                            -- Тип устройства (принтер, телефон)
+            device_brand VARCHAR(50),                                                           -- Бренд устройства (Asus, Apple)
+            device_model VARCHAR(100),                                                          -- Модель устройства (iPhone 16)
+            equipment VARCHAR(100),                                                             -- Комплектация устройства (Зарядка)
+            problem TEXT,                                                                       -- Описание проблемы
+            appearance VARCHAR(100),                                                            -- Внешний вид устройства
+            created_date TIMESTAMP,                                                             -- Дата приема устройства
+            completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
+            diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
+            cost_repair DECIMAL(10, 2),                                                         -- Стоимость ремонта
+            cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
+            path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства
+            client_id UUID NOT NULL,                                                            -- user_id клиента заказа в UUID
+            created_by BIGINT NOT NULL,                                                         -- Оформил менеджер с телеграмм id
+            master UUID,                                                                        -- user_id мастера в UUID
+            edit_history JSONB,                                                                 -- Позже можно цепочку изменнений вносить, кто и когда менял
+            comments TEXT,                                                                      -- Комментарии по ремонту
+            completed_works JSONB,                                                              -- Выполненные работы в JSON
+            FOREIGN KEY (client_id) REFERENCES users(user_id)
         );
-            CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+            CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
             CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
             CREATE INDEX IF NOT EXISTS idx_orders_serial ON orders(serial_number);
         '''

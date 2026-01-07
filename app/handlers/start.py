@@ -40,8 +40,7 @@ async def registration_telegram_user(message: types.Message, state: FSMContext) 
     """ Проверка капчи тупой и добавление пользователя """
     await typing(message)
     send_data = await state.get_data()
-    cldata = send_data.get("send_data")
-    answerq = str(cldata.get("answerq"))
+    answerq = str(send_data.get("answerq"))
 
     user_id = message.from_user.id
     lang = message.from_user.language_code
@@ -53,7 +52,7 @@ async def registration_telegram_user(message: types.Message, state: FSMContext) 
         return
     
     success = await add_user({
-        'user_id': str(uuid.uuid4()),
+        'user_id': uuid.uuid4(),
         'user_telegram': user_id,
         'name': message.from_user.first_name,
         'language': lang,
@@ -121,7 +120,7 @@ async def start_router(message: types.Message, state: FSMContext):
     answerq = eval(f"{a}{op}{b}")
     question = f'{a} {op} {b} = ?'
 
-    await state.update_data(send_data={'answerq': answerq})
+    await state.update_data(answerq=answerq)
     await message.answer(f"{question}")
     await state.set_state(FormStart.captcha)
 
