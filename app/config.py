@@ -79,6 +79,8 @@ def get_brands(devise: str) -> list:
 
 # print(get_brands("💻 Laptop"))
 
+EQUIPMENT_RU = ["Устройство", "Зарядка", "Пакет", "Сумка"]
+
 
 
 

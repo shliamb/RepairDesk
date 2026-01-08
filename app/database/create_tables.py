@@ -49,7 +49,7 @@ def create_tables_in_db():
         create_table_orders = '''
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
-            serial_number VARCHAR(50),
+            sn_imei VARCHAR(50),
             status VARCHAR(50),                                                                 -- Статус заказа (новый, в работе, готов..)
             order_type VARCHAR(50),                                                             -- Тип заказа (Платный, гарантийный)
             device_type VARCHAR(50),                                                            -- Тип устройства (принтер, телефон)
@@ -74,7 +74,7 @@ def create_tables_in_db():
         );
             CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
             CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-            CREATE INDEX IF NOT EXISTS idx_orders_serial ON orders(serial_number);
+            CREATE INDEX IF NOT EXISTS idx_orders_serial ON orders(sn_imei);
         '''
         cursor.execute(create_table_orders)
 

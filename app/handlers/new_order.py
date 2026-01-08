@@ -8,7 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
-from config import get_brands, DEVICES_RU, DEVICES_EN
+from config import get_brands, DEVICES_RU, DEVICES_EN, EQUIPMENT_RU
 from keyboards.workshop import build_keyboard
 from common import day_utcnow
 import uuid
@@ -32,10 +32,11 @@ class newOrder(StatesGroup):
     order_type = State()
     device_type = State()
     other_device = State()
-    sn_imei = State()
     brand = State()
     other_brand = State()
     model = State()
+    sn_imei = State()
+    equipment = State()
 
 
 # state_data = await state.get_data()
@@ -49,27 +50,51 @@ class newOrder(StatesGroup):
 
 
 
-# OTHER DEVICE
+
+# equipment - в цикл, что бы добавлялось, готово.. типа..
+
+# SN/IMEI
 @router.message(newOrder.sn_imei)
 async def sn_imei(message: types.Message, state: FSMContext):
     """ SN/imei устройства """
     await typing(message)
-    serial_number = message.text
-    if serial_number == "🎲 Пропустить":
-        serial_number = None
+    sn_imei = message.text
+    if sn_imei == "🎲 Пропустить":
+        sn_imei = None
     # Валидация позже
-    await state.update_data(serial_number=serial_number)
+    await state.update_data(sn_imei=sn_imei)
+    equipment = EQUIPMENT_RU
+    equipment.append("🎲 Пропустить")
+    await message.answer("Комплектация:", reply_markup = build_keyboard(equipment))
+    await state.set_state(newOrder.equipment)
 
-    # # Получение брендов
-    # state_data = await state.get_data()
-    # brands = get_brands(state_data.get("device_type"))
-    # brands.append("📝 Свой вариант")
-    # await message.answer("Выберите марку/бренд устройства", reply_markup = build_keyboard(brands)) 
-    # await state.set_state(newOrder.brand)
+# MODEL
+@router.message(newOrder.model)
+async def model_device(message: types.Message, state: FSMContext):
+    """ Модель устройства """
+    await typing(message)
 
+    # Валидация позже...
+    answer = message.text
+    if answer == "🎲 Пропустить":
+        device_model = None
+    
+    device_model = answer
 
-#await message.answer("Серийный номер / IMEI:", reply_markup = build_keyboard(["🎲 Пропустить"])) 
+    await state.update_data(device_model=device_model)
+    await message.answer("Серийный номер / IMEI:", reply_markup = build_keyboard(["🎲 Пропустить"]))
+    await state.set_state(newOrder.sn_imei)
 
+# OTHER BRAND
+@router.message(newOrder.other_brand)
+async def other_brand(message: types.Message, state: FSMContext):
+    """ Бренд устройства свой вариант """
+    await typing(message)
+    # Позже валидация + проверка (недопустимые символы и код, что бы в базу не залили)
+    device_brand = message.text
+    await state.update_data(device_type=device_brand)
+    await message.answer("Модель устройства:", reply_markup = build_keyboard(["🎲 Пропустить"]))
+    await state.set_state(newOrder.model)
 
 # BRAND DEVICE
 @router.message(newOrder.brand)
@@ -85,18 +110,13 @@ async def brand_device(message: types.Message, state: FSMContext):
     
     elif message.text in brands:
         # Позже валидация + проверка (недопустимые символы и код, что бы в базу не залили)
-        device_type = message.text
-        await state.update_data(device_type=device_type)
-        # Получение брендов
-        brands = get_brands(device_type)
-        brands.append("📝 Свой вариант")
-        await message.answer("Выберите марку/бренд устройства", reply_markup = build_keyboard(brands)) 
-        await state.set_state(newOrder.brand)
+        device_brand = message.text
+        await state.update_data(device_type=device_brand)
+        await message.answer("Модель устройства:", reply_markup = build_keyboard(["🎲 Пропустить"]))
+        await state.set_state(newOrder.model)
 
     else:
         await message.answer("Попробуйте еще раз выбрать из меню пункт")
-
-
 
 # OTHER DEVICE
 @router.message(newOrder.other_device)
@@ -105,9 +125,9 @@ async def other_device(message: types.Message, state: FSMContext):
     await typing(message)
     # Позже валидация + проверка (недопустимые символы и код, что бы в базу не залили)
     device_type = message.text
-    await state.update_data(device_type=device_type)
+    # Получение брендов по типу устройства
     brands = get_brands(device_type)
-    await state.update_data(brands=brands)
+    await state.update_data(device_type=device_type, brands=brands)
     brands.append("📝 Свой вариант")
     await message.answer("Выберите марку/бренд устройства", reply_markup = build_keyboard(brands)) 
     await state.set_state(newOrder.brand)
@@ -124,9 +144,9 @@ async def type_device(message: types.Message, state: FSMContext):
     elif message.text in DEVICES_RU:
         # Позже валидация + проверка (недопустимые символы и код, что бы в базу не залили)
         device_type = message.text
-        await state.update_data(device_type=device_type)
-        # Получение брендов
+        # Получение брендов по типу устройства
         brands = get_brands(device_type)
+        await state.update_data(device_type=device_type, brands=brands)
         brands.append("📝 Свой вариант")
         await message.answer("Выберите марку/бренд устройства", reply_markup = build_keyboard(brands)) 
         await state.set_state(newOrder.brand)
