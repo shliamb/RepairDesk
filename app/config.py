@@ -22,11 +22,19 @@ PATH_LOGS = "/logs" if DOCKER else "logs"
 # SYST_CONT_FOLDER = "/" if DOCKER else "../"
 
 
-# NEW ORDER
-# BRANDS
+################ NEW ORDER #####################
 
-DEVICES_RU = ["💻 Ноутбук", "🖥 ПК", "Телефон", "Видеокарта", "Материнская плата", "Монитор", "Планшет", "Принтер", "Игровая консоль", "📝 Свой вариант"]
-DEVICES_EN = ["💻 Laptop", "🖥 PC", "Phone", "Gpu", "Motherboard", "Monitor", "Tablet", "Printer", "Console", "📝 Your own version"]
+
+PROBLEMS = {"ru": ["Не включается", "Не заряжается", "Нет изображения", "Греется", "Шумит", "Тормозит", "Зависает"], "en": ["Won't turn on", "Won't charge", "No image", "Heats up", "Makes noise", "Slows down", "Freezes"]}
+CANCEL =  {"ru": "🚫 Отмена", "en": "🚫 Cancellation"}
+ORDER = {"new_ru": "📝 Новый заказ", "new_en": "📝 New order"}
+CLIENT = {"new_ru": "👨🏻‍💼 Создать клиента", "new_en": "👨🏻‍💼 Create a client", "serch_ru": "🔎 Найти клиента", "serch_en": "🔎 Find a client"}
+MISS = {"ru": "🎲 Пропустить", "en": "🎲 Miss"}
+TYPE_ORDER = {"paid_ru": "🤑 Платный", "guarant_ru": "🤬 Гарантийный", "paid_en": "🤑 Paid", "guarant_en": "🤬 Warranty period"}
+DONE = {"ru": "✅ Готово", "en": "✅ Done"}
+OWN_VERSION = {"ru": "📝 Свой вариант", "en": "📝 Your own version"}
+EQUIPMENT = {"ru": ["Устройство", "Зарядка", "Пакет", "Сумка", "Кошка", "Ребенок"], "en": ["Device", "Charging", "Package", "Bag", "Cat", "Child"]} # Комплектация
+APPEARANCE = {"ru": ["Потёртости", "Царапины", "Сколы"], "en": ["Scuffs", "Scratches", "Chips"]}
 
 LAPTOP_BRANDS = ["Asus", "Lenovo", "HP", "Dell", "Acer", "Apple", "MSI", "Toshiba", "Sony", "LG", "Microsoft", "Fujitsu", "Alienware", "Razer", "DEXP", "IRU", "Huawei", "Xiaomi", "Honor", "Samsung", "Prestigio", "DNS"]
 PHONE_BRANDS = ["Samsung", "Apple", "Xiaomi", "Huawei", "Honor", "Realme", "Vivo", "Oppo", "OnePlus", "Nokia", "Sony", "Google", "ZTE", "Motorola", "Alcatel", "Philips", "Texet", "BQ", "Meizu", "Asus"]
@@ -41,27 +49,32 @@ PC = ["PC"]
 DEVICE_BRANDS_RU = {
     "💻 Ноутбук": LAPTOP_BRANDS,
     "🖥 ПК": PC,
-    "Телефон": PHONE_BRANDS,
+    # "Телефон": PHONE_BRANDS, # Комментирую если не использую
     "Видеокарта": GPU_BRANDS,
     "Материнская плата": MOTHERBOARD_BRANDS,
-    "Монитор": MONITOR_BRANDS,
+    # "Монитор": MONITOR_BRANDS,
     "Планшет": TABLET_BRANDS,
-    "Принтер": PRINTER_BRANDS,
+    # "Принтер": PRINTER_BRANDS,
     "Игровая консоль": CONSOLE_BRANDS
 }
 
 DEVICE_BRANDS_EN = {
     "💻 Laptop": LAPTOP_BRANDS,
     "🖥 PC": PC,
-    "Phone": PHONE_BRANDS,
+    # "Phone": PHONE_BRANDS,
     "Gpu": GPU_BRANDS,
     "Motherboard": MOTHERBOARD_BRANDS,
-    "Monitor": MONITOR_BRANDS,
+    # "Monitor": MONITOR_BRANDS,
     "Tablet": TABLET_BRANDS,
-    "Printer": PRINTER_BRANDS,
+    # "Printer": PRINTER_BRANDS,
     "Console": CONSOLE_BRANDS
 }
 
+def get_devices(DEVICES) -> list:
+    return list(DEVICES.keys())
+
+DEVICES_RU = get_devices(DEVICE_BRANDS_RU)
+DEVICES_EN = get_devices(DEVICE_BRANDS_EN)
 
 def has_cyrillic_simple(devise: str) -> bool:
     for ch in devise:
@@ -69,18 +82,14 @@ def has_cyrillic_simple(devise: str) -> bool:
             return True
     return False
 
-def get_brands(devise: str) -> list:
-    if not devise:
+def get_brands(device: str) -> list:
+    if not device:
         return ["Another"]
-    elif has_cyrillic_simple(devise):
-        return DEVICE_BRANDS_RU.get(devise, ["Другой"])
+    
+    if has_cyrillic_simple(device):
+        return DEVICE_BRANDS_RU.get(device, ["Другой"]).copy()
     else:
-        return DEVICE_BRANDS_EN.get(devise, ["Another"])
-
-# print(get_brands("💻 Laptop"))
-
-EQUIPMENT_RU = ["Устройство", "Зарядка", "Пакет", "Сумка"]
-
+        return DEVICE_BRANDS_EN.get(device, ["Another"]).copy()
 
 
 

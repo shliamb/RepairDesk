@@ -6,7 +6,6 @@ def build_keyboard(menu: list):
     builder = ReplyKeyboardBuilder()
     for point in menu:
         builder.button(text=point)
-    builder.button(text="✖️ Отмена")
     builder.adjust(2)  # автоматически выравниваем
     return builder.as_markup(resize_keyboard=True, one_time_keyboard=False)
     
