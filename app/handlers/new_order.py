@@ -95,15 +95,20 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
         "created_date": state_data.get("created_date"),
         "diagnosis_before": state_data.get("diagnosis_before"),
         "cost_diagnostics": parse_cost(state_data.get("cost_diagnostics")), # Только цена
-        "path_photo": state_data.get("path_photo"),
+        "path_photo": None, #state_data.get("path_photo"),
         "client_id": state_data.get("client_id"),
         "created_by": state_data.get("created_by")
     }
 
-    print(data)
+    print("data:", data)
 
-    confirm = await order.create_order(data)
-    print(confirm)
+    order_number = await order.create_order(data)
+    print(order_number)
+
+    if order_number:
+        data = await order.get_order_order_number(order_number)
+        print(data)
+
 
     if lang == "ru": await message.answer("Готово бля..", reply_markup=ReplyKeyboardRemove())
     else: await message.answer("🚫 Done yep..", reply_markup=ReplyKeyboardRemove())
@@ -131,8 +136,8 @@ async def get_media(message: types.Message, state: FSMContext):
 async def go_to_media_order(lang: str, state: FSMContext, message: types.Message):
     """ Запуск State Перехода в медиа """
     await typing(message)
-    state_data = await state.get_data() ####
-    print(state_data)
+    # state_data = await state.get_data() ####
+    # print(state_data)
 
     media = []
     if lang == "ru":

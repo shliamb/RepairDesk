@@ -106,7 +106,6 @@ PREFIXES = {
 # Номера: GR-2024-0001, PD-2024-0001, EX-2024-0001
 
 
-
 # .env:
 TELEGRAM_BOT_TOKEN = os.environ.get('telegram_bot_token')
 USER_DB = os.environ.get('USER_DB')

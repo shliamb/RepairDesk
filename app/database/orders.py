@@ -2,7 +2,7 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="db")
 from config import PREFIXES
-import datetime
+from datetime import datetime
 
 
 
@@ -54,10 +54,13 @@ class OrderService:
         """Создать заказ и вернуть его номер"""
 
         # Генерируем номер
-        prefix = PREFIXES.get(order_data.get('order_type', 'general'), 'OR')
+        order_type = order_data.get('order_type', 'general')
+        prefix = PREFIXES.get(order_type, 'OR')
         order_number = await self._generate_order_number(prefix)
 
         order_data['order_number'] = order_number
+        # order_data['order_number'] = "A-32354324"
+        # print(order_data)
 
         keys = list(order_data.keys())
         values = list(order_data.values())
@@ -68,15 +71,35 @@ class OrderService:
         query = f"INSERT INTO orders ({columns}) VALUES ({placeholders}) RETURNING order_number"
 
         try:
-            result = await self.db.execute(query, *values)
-            return result['order_number']
+            result = await self.db.fetchrow(query, *values)
+            return result['order_number'] # result.order_number
         
         except Exception as e:
             logger.error(f"Error adding order: {e}")
             return "Error"
 
 
-    async def get_order(self, id: int):
+    async def get_order_id(self, id: int):
         """ Получить заказ по его ID"""
         query = "SELECT * FROM orders WHERE id = $1"
-        return await self.db.fetch(query, id)
+        records = await self.db.fetch(query, id)
+        return [dict(rec) for rec in records]
+    
+
+    async def get_order_order_number(self, order_number: str):
+        """ Получить заказ по его order_number"""
+        query = "SELECT * FROM orders WHERE order_number = $1"
+        record = await self.db.fetchrow(query, order_number)
+        if record:
+            return dict(record)
+        return {}
+
+    
+
+    # if not records:  # список пустой
+    #     return {}
+    
+    # # Берём первый Record и преобразуем в dict
+    # first_record = records[0]
+    # return dict(first_record)
+    

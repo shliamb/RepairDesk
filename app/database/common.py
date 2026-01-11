@@ -60,36 +60,52 @@ class Database:
     
 
     async def fetch(self, query, *args):
-        """Получить данные (SELECT)"""
+        """Выполнить SELECT и получить все строки"""
+        # для: SELECT * FROM ...
         await self._ensure_connected()
         async with self.pool.acquire() as conn:
             return await conn.fetch(query, *args)
     
 
     async def fetchrow(self, query, *args):
-        """Получить одну строку"""
+        """Выполнить запрос и получить первую строку"""
+        # для: SELECT ... LIMIT 1 или INSERT ... RETURNING
         await self._ensure_connected()
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, *args)
     
 
     async def execute(self, query, *args):
-        """Выполнить запрос (INSERT/UPDATE/DELETE)"""
+        """Выполнить запрос без возврата данных"""
+        # для: INSERT/UPDATE/DELETE без RETURNING
         await self._ensure_connected()
         async with self.pool.acquire() as conn:
             return await conn.execute(query, *args)
 
 
-    async def fetchval(self, query, *args, column=0):
-        """Получить одно значение из результата"""
+    # async def fetchval_first(self, query, *args, column=0):
+    #     """Выполнить запрос и получить одно значение (первый столбец)"""
+    #     await self._ensure_connected()
+    #     async with self.pool.acquire() as conn:
+    #         return await conn.fetchval(query, *args)
+        
+
+    async def fetchval(self, query, *args):
+        """Получить одно значение (например, RETURNING id)"""
+        # для: SELECT id FROM ... или INSERT ... RETURNING id
         await self._ensure_connected()
         async with self.pool.acquire() as conn:
-            # asyncpg имеет conn.fetchval
             return await conn.fetchval(query, *args)
+        
 
 
 
+# Разница:
+# fetchval → возвращает 'A-32354324' (значение)
 
+# fetchrow → возвращает {'order_number': 'A-32354324'} (словарь)
+
+# fetch → возвращает [{'order_number': 'A-32354324'}] (список словарей)
 
 
 
