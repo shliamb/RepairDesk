@@ -5,46 +5,43 @@ from handlers.common import typing, is_manager
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
-from aiogram.fsm.state import State, StatesGroup
+# from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 # from keyboards import wskey
 from keyboards.workshop import build_keyboard
+from config import CANCEL
 
 
 
 router = Router()
 
-# class startWorkshop(StatesGroup):
-#     choice = State()
 
-
+# WORKSHOP
 @router.message(Command("workshop"))
 async def workshop_panel(message: types.Message, state: FSMContext):
     """ Вход в workshop """
     await state.clear()
     await typing(message)
+    lang = message.from_user.language_code
     user_id = message.from_user.id
 
     if not await is_manager(user_id):
-        logger.error(f"{user_id} пытался войти в workshop")
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
         return
     
-    await message.answer (
-        "🎛 Выберите действие:\n\n",
-        reply_markup = build_keyboard(["📝 Новый заказ", "📋 Активные заказы", "🔧 В работе", "✅ Готовые", "📊 Статистика"]) # стоит вынести для удобства 
-    )
+    if lang == "ru": await message.answer("⚙️ Выберите действие:", reply_markup = build_keyboard(["📝 Новый заказ", "📋 Активные заказы", "🔧 В работе", "✅ Готовые", "📊 Статистика", CANCEL["en"]])) 
+    else: await message.answer("👨🏻‍💼 Find a client or create anew:", reply_markup = build_keyboard(["📝 New order", "📋 Active orders", "🔧 In progress", "✅ Ready", "📊 Statistics", CANCEL["en"]])) 
 
-
-@router.message(F.text == "✖️ Отмена")
-async def cancel(message: types.Message, state: FSMContext):
-    """ Отмена """
-    await state.clear() # Лишнее..
-    await message.answer(
-        "Отменено. Состояние сброшено.",
-        reply_markup=ReplyKeyboardRemove()
-    )
-
-
+# CANCEL STATE & KEYBOARD
+@router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
+async def cancel(message: types.Message, state: FSMContext): 
+    """ Отмена / Cancelled """
+    await typing(message)
+    lang = message.from_user.language_code
+    await state.clear()
+    if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
 
 
 

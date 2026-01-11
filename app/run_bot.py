@@ -200,7 +200,7 @@ async def main_bot() -> None:
     finally:
         # 4. Всегда закрываем соединение
         await db.close()
-        #logger_bot.info("Database connection closed")
+        logger.info("Database connection closed")
 
 
 if __name__ == "__main__":

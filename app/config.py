@@ -35,6 +35,8 @@ DONE = {"ru": "✅ Готово", "en": "✅ Done"}
 OWN_VERSION = {"ru": "📝 Свой вариант", "en": "📝 Your own version"}
 EQUIPMENT = {"ru": ["Устройство", "Зарядка", "Пакет", "Сумка", "Кошка", "Ребенок"], "en": ["Device", "Charging", "Package", "Bag", "Cat", "Child"]} # Комплектация
 APPEARANCE = {"ru": ["Потёртости", "Царапины", "Сколы"], "en": ["Scuffs", "Scratches", "Chips"]}
+DIAGNOSTIC_TIME = {"ru": ["Без диагностики", "1 день", "2 дня", "3 дня", "Без ограничений"], "en": ["No diagnosis", "1 day", "2 days", "3 days", "Unlimited"]}
+COST_DIAGNOSTIC = {"ru": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"], "en": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"]}
 
 LAPTOP_BRANDS = ["Asus", "Lenovo", "HP", "Dell", "Acer", "Apple", "MSI", "Toshiba", "Sony", "LG", "Microsoft", "Fujitsu", "Alienware", "Razer", "DEXP", "IRU", "Huawei", "Xiaomi", "Honor", "Samsung", "Prestigio", "DNS"]
 PHONE_BRANDS = ["Samsung", "Apple", "Xiaomi", "Huawei", "Honor", "Realme", "Vivo", "Oppo", "OnePlus", "Nokia", "Sony", "Google", "ZTE", "Motorola", "Alcatel", "Philips", "Texet", "BQ", "Meizu", "Asus"]
@@ -92,6 +94,16 @@ def get_brands(device: str) -> list:
         return DEVICE_BRANDS_EN.get(device, ["Another"]).copy()
 
 
+
+
+PREFIXES = {
+    'guarant': 'GR',    # гарантийный
+    'paid': 'PD',       # платный
+    'express': 'EX',    # срочный
+    'general': 'GE'     # Если что то пошло не так..  
+}
+
+# Номера: GR-2024-0001, PD-2024-0001, EX-2024-0001
 
 
 

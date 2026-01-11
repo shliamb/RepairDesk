@@ -80,6 +80,12 @@ class Database:
             return await conn.execute(query, *args)
 
 
+    async def fetchval(self, query, *args, column=0):
+        """Получить одно значение из результата"""
+        await self._ensure_connected()
+        async with self.pool.acquire() as conn:
+            # asyncpg имеет conn.fetchval
+            return await conn.fetchval(query, *args)
 
 
 

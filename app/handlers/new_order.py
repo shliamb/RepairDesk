@@ -8,25 +8,33 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
-from config import get_brands, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
+from config import get_brands, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
 from keyboards.workshop import build_keyboard
 from common import day_utcnow
+from database import db
+from database.orders import OrderService
+from decimal import Decimal
 import uuid
+import json
 
 router = Router()
+order = OrderService(db)
 
 """
 Че еще надо бы..
 
-!!!! Позже добавить два языка!!!
-!!! Возможно упростить добавление
 Очень нужна валидация, хоть и менеджеры не 
 должны ломать и передавать злой код, но все же..
 
-Позже добавить к каждому меню builder.button(text="✖️ Отмена")
-на двух языках, наверное.. думаю да..
 
 """
+
+def parse_cost(cost_text: str) -> Decimal:
+    """Из '1000 RUB' → Decimal(1000.00)"""
+    digits = ''.join(ch for ch in cost_text if ch.isdigit() or ch == '.')
+    return Decimal(digits) if digits else Decimal('0')
+
+
 
 class newOrder(StatesGroup):
     client = State()
@@ -47,6 +55,14 @@ class newOrder(StatesGroup):
     other_problem = State()
     appearance = State()
     other_appearance = State()
+    diagnostic_time = State()
+    other_diagnostic_time = State()
+    cost_diagnosis = State()
+    other_cost_diagnosis = State()
+    go_media = State()
+
+
+#{'user_id': UUID('4b912915-aee3-4ed0-ba76-c398d42006a4'), 'created_by': 1666495, 'client_id': UUID('4b912915-aee3-4ed0-ba76-c398d42006a4'), 'created_date': datetime.datetime(2026, 1, 11, 1, 50, 30), 'status': 'new', 'order_type': 'paid', 'device_type': '💻 Laptop', 'brands': ['Asus', 'Lenovo', 'HP', 'Dell', 'Acer', 'Apple', 'MSI', 'Toshiba', 'Sony', 'LG', 'Microsoft', 'Fujitsu', 'Alienware', 'Razer', 'DEXP', 'IRU', 'Huawei', 'Xiaomi', 'Honor', 'Samsung', 'Prestigio', 'DNS'], 'device_brand': 'Dell', 'device_model': '666', 'sn_imei': None, 'equipment': ['Device', 'Charging'], 'problem': ["Won't turn on"], 'appearance': ['Scuffs'], 'diagnostic_time': '1 day', 'cost_diagnostics': '1000 RUB'}
 
 
 # CANCEL STATE & KEYBOARD
@@ -61,7 +77,187 @@ async def cancel(message: types.Message, state: FSMContext):
 
 
 
+# SAVE ORDER TO DB
+async def save_order(lang: str, state: FSMContext, message: types.Message):
+    """ Сохранение в базу заказа """
+    await typing(message)
+    state_data = await state.get_data()
+    data = {
+        "sn_imei": state_data.get("sn_imei", None),
+        "status": state_data.get("status", "new"),
+        "order_type": state_data.get("order_type", "paid"),
+        "device_type": state_data.get("device_type"),
+        "device_brand": state_data.get("device_brand"),
+        "device_model": state_data.get("device_model"),
+        "equipment": json.dumps(state_data.get("equipment", []), ensure_ascii=False), # Пока что спсок в строку перевожу, могу забрать и обратно, пока думаю..
+        "problem": json.dumps(state_data.get("problem", []), ensure_ascii=False),
+        "appearance": json.dumps(state_data.get("appearance", []), ensure_ascii=False),
+        "created_date": state_data.get("created_date"),
+        "diagnosis_before": state_data.get("diagnosis_before"),
+        "cost_diagnostics": parse_cost(state_data.get("cost_diagnostics")), # Только цена
+        "path_photo": state_data.get("path_photo"),
+        "client_id": state_data.get("client_id"),
+        "created_by": state_data.get("created_by")
+    }
 
+    print(data)
+
+    confirm = await order.create_order(data)
+    print(confirm)
+
+    if lang == "ru": await message.answer("Готово бля..", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("🚫 Done yep..", reply_markup=ReplyKeyboardRemove())
+
+
+
+
+# MEDIA
+@router.message(newOrder.go_media)
+async def get_media(message: types.Message, state: FSMContext):
+    """ Получения медиа устройства """
+    await typing(message)
+    lang = message.from_user.language_code
+
+    # Позже добавлю логику, надо фото сохранять и path в базу
+    # path_photo - путь где по данному заказу будут в папке фотки устройства и чела)
+    if message.text in (MISS["ru"], MISS["en"]): pass
+    else: return
+
+    await save_order(lang, state, message)
+    await state.clear()
+
+
+# Go to get media
+async def go_to_media_order(lang: str, state: FSMContext, message: types.Message):
+    """ Запуск State Перехода в медиа """
+    await typing(message)
+    state_data = await state.get_data() ####
+    print(state_data)
+
+    media = []
+    if lang == "ru":
+        media.extend([MISS["ru"], CANCEL["ru"]])
+        message_text = "📸 В разработке.."
+    else:
+        media.extend([MISS["en"], CANCEL["en"]])
+        message_text = "📸 In development.."
+
+    await message.answer(message_text, reply_markup = build_keyboard(media))
+    await state.set_state(newOrder.go_media)
+
+
+# OTHER COST_DIAGNOSTIC
+@router.message(newOrder.other_cost_diagnosis)
+async def other_cost_diagnosis(message: types.Message, state: FSMContext):
+    """ Свой вариант цены диагностики """
+    await typing(message)
+    lang = message.from_user.language_code
+    cost_diagnostics = message.text
+    await state.update_data(cost_diagnostics=cost_diagnostics)
+    await go_to_media_order(lang, state, message)
+
+
+# COST_DIAGNOSTIC
+@router.message(newOrder.cost_diagnosis)
+async def cost_diagnosis(message: types.Message, state: FSMContext):
+    """ Определение стоимости диагностики """
+    await typing(message)
+    lang = message.from_user.language_code
+    # state_data = await state.get_data() ####
+    # print(state_data)
+    if message.text in set(COST_DIAGNOSTIC["ru"] + COST_DIAGNOSTIC["en"]):
+        cost_diagnostics = message.text
+        await state.update_data(cost_diagnostics=cost_diagnostics)
+
+    elif message.text in (OWN_VERSION["ru"], OWN_VERSION["en"]):
+        if lang == "ru": await message.answer("📝 Введите свой вариант цены диагностики:")
+        else: await message.answer("📝 Enter your option for the diagnosis cost:")
+        await state.set_state(newOrder.other_cost_diagnosis)
+        return
+    
+    elif message.text in (MISS["ru"], MISS["en"]):
+        await state.update_data(cost_diagnostics=None)
+
+    else:
+        if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+        else: await message.answer("🚫 Try again to select an item from the menu")
+        return
+
+    await go_to_media_order(lang, state, message)
+
+
+# Go to cost diagnost state
+async def go_to_cost_diagnostic(lang: str, state: FSMContext, message: types.Message):
+    """ Запуск State выбора цены диагностики """
+    await typing(message)
+    # state_data = await state.get_data() ####
+    # print(state_data)
+
+    if lang == "ru":
+        diagnostic_time = COST_DIAGNOSTIC["ru"].copy()
+        diagnostic_time.extend([OWN_VERSION["ru"], CANCEL["ru"]])
+        message_text = "💵 Стоимость диагностики:"
+    else:
+        diagnostic_time = COST_DIAGNOSTIC["en"].copy()
+        diagnostic_time.extend([OWN_VERSION["en"], CANCEL["en"]])
+        message_text = "💵 The cost of diagnosis:"
+
+    await message.answer(message_text, reply_markup = build_keyboard(diagnostic_time))
+    await state.set_state(newOrder.cost_diagnosis)
+
+
+# OTHER DIAGNOSTIC_TIME
+@router.message(newOrder.other_diagnostic_time)
+async def other_diagnostic_time(message: types.Message, state: FSMContext):
+    """ Свой вариант времени диагностики """
+    await typing(message)
+    lang = message.from_user.language_code
+    diagnostic_time = message.text
+    await state.update_data(diagnostic_time=diagnostic_time)
+    await go_to_cost_diagnostic(lang, state, message)
+
+
+# DIAGNOSTIC_TIME
+@router.message(newOrder.diagnostic_time)
+async def diagnostic_time(message: types.Message, state: FSMContext):
+    """ Определение сроков диагностики  """
+    await typing(message)
+    lang = message.from_user.language_code
+    # state_data = await state.get_data() ####
+    # print(state_data)
+    if message.text in set(DIAGNOSTIC_TIME["ru"] + DIAGNOSTIC_TIME["en"]):
+        diagnostic_time = message.text
+        await state.update_data(diagnostic_time=diagnostic_time)
+
+    elif message.text in (OWN_VERSION["ru"], OWN_VERSION["en"]):
+        if lang == "ru": await message.answer("📝 Введите свой вариант срока диагностики:")
+        else: await message.answer("📝 Enter your option for the diagnosis period:")
+        await state.set_state(newOrder.other_diagnostic_time)
+        return
+    
+    else:
+        if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+        else: await message.answer("🚫 Try again to select an item from the menu")
+        return
+
+    await go_to_cost_diagnostic(lang, state, message)
+
+
+# OTHER APPEARANCE
+@router.message(newOrder.other_appearance)
+async def other_appearance(message: types.Message, state: FSMContext):
+    """ Свой вариант внешнего вида устройства, добавляется к уже выбранному  """
+    await typing(message)
+    lang = message.from_user.language_code
+    state_data = await state.get_data()
+    appearance = state_data.get("appearance", []).copy()
+    # Валидация позже
+    appearance.append(message.text)
+    await state.update_data(appearance=appearance)
+    if lang == "ru": await message.answer("Описание внешнего вида (по готовности, нажмите - Готово):")
+    else: await message.answer("Description of the appearance (when ready, click Done):")
+    
+    await state.set_state(newOrder.appearance)
 
 
 # APPEARANCE
@@ -70,9 +266,52 @@ async def appearance(message: types.Message, state: FSMContext):
     """ Внешний вид устройства  """
     await typing(message)
     lang = message.from_user.language_code
-    state_data = await state.get_data()
-    print(state_data)
+    flag = False
+    # state_data = await state.get_data()
+    # print(state_data)
+    if message.text in set(APPEARANCE["ru"] + APPEARANCE["en"]):
+        state_data = await state.get_data()
+        appearance = state_data.get("appearance", []).copy()
+        if message.text in appearance:
+            if lang == "ru": await message.answer("🚫 Вы уже добавили этот элемент")
+            else: await message.answer("🚫 You have already added this element")
+            return
+        appearance.append(message.text)
+        await state.update_data(appearance=appearance)
 
+    elif message.text in (OWN_VERSION["ru"], OWN_VERSION["en"]):
+        if lang == "ru": await message.answer("📝 Опишите внешний вид устройства:")
+        else: await message.answer("📝 Describe the device's appearance:")
+        await state.set_state(newOrder.other_appearance)
+        return
+
+    elif message.text in (MISS["ru"], MISS["en"]):
+        await state.update_data(appearance=[])
+        flag = True
+
+    elif message.text in (DONE["ru"], DONE["en"]):
+        flag = True
+
+    else:
+        if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+        else: await message.answer("🚫 Try again to select an item from the menu")
+        return
+    
+    if not flag:
+        return
+    
+    if lang == "ru":
+        diagnostic_time = DIAGNOSTIC_TIME["ru"].copy()
+        diagnostic_time.extend([OWN_VERSION["ru"], CANCEL["ru"]])
+        message_text = "⏳ Сроки диагностики:"
+    else:
+        diagnostic_time = DIAGNOSTIC_TIME["en"].copy()
+        diagnostic_time.extend([OWN_VERSION["en"], CANCEL["en"]])
+        message_text = "⏳ Terms of diagnosis:"
+
+    # await state.update_data(diagnostic_time=[]) # Заранее..
+    await message.answer(message_text, reply_markup = build_keyboard(diagnostic_time))
+    await state.set_state(newOrder.diagnostic_time)
 
 
 
@@ -100,9 +339,6 @@ async def problems(message: types.Message, state: FSMContext):
     lang = message.from_user.language_code
     flag = False
 
-    # state_data = await state.get_data()
-    # print(state_data)
-
     if message.text in set(PROBLEMS["ru"] + PROBLEMS["en"]):
         state_data = await state.get_data()
         problem = state_data.get("problem", []).copy()
@@ -118,8 +354,14 @@ async def problems(message: types.Message, state: FSMContext):
         if lang == "ru": await message.answer("📝 Опишите заявленные проблемы/неисправности:")
         else: await message.answer("📝 Describe the stated problems/malfunctions:")
         await state.set_state(newOrder.other_problem)
+        return
 
     elif message.text in (DONE["ru"], DONE["en"]):
+        state_data = await state.get_data()
+        if not state_data.get("problem"):
+            if lang == "ru": await message.answer("🚫 Выберите или опишите проблему, без этого будет трудно чинить:")
+            else: await message.answer("🚫 Select or describe the problem, otherwise it will be difficult to fix:")
+            return
         flag = True
 
     else:
@@ -132,14 +374,14 @@ async def problems(message: types.Message, state: FSMContext):
 
     if lang == "ru":
         appearance = APPEARANCE["ru"].copy()
-        appearance.extend([OWN_VERSION["ru"], DONE["ru"], CANCEL["ru"]])
+        appearance.extend([OWN_VERSION["ru"], DONE["ru"], MISS["ru"], CANCEL["ru"]])
         message_text = "🧯 Опишите внешний вид устройства:"
     else:
         appearance = APPEARANCE["en"].copy()
-        appearance.extend([OWN_VERSION["en"], DONE["en"], CANCEL["en"]])
+        appearance.extend([OWN_VERSION["en"], DONE["en"], MISS["en"], CANCEL["en"]])
         message_text = "🧯 Describe the device's appearance:"
 
-    await state.update_data(appearance=[]) # Заранее..
+    # await state.update_data(appearance=[]) # Заранее..
     await message.answer(message_text, reply_markup = build_keyboard(appearance))
     await state.set_state(newOrder.appearance)
 
@@ -172,10 +414,11 @@ async def equipment(message: types.Message, state: FSMContext):
         if lang == "ru": await message.answer("📝 Напишите cвой вариант комплектации:")
         else: await message.answer("📝 Write your configuration option:")
         await state.set_state(newOrder.other_equipment)
+        return
         
     elif message.text in set(EQUIPMENT["ru"] + EQUIPMENT["en"]):
         state_data = await state.get_data()
-        equipment = state_data.get("equipstate_datament", []).copy()
+        equipment = state_data.get("equipment", []).copy()
         if message.text in equipment:
             if lang == "ru": await message.answer("🚫 Вы уже добавили этот элемент")
             else: await message.answer("🚫 You have already added this element")
@@ -208,7 +451,7 @@ async def equipment(message: types.Message, state: FSMContext):
         problems.extend([OWN_VERSION["en"], DONE["en"], CANCEL["en"]])
         message_text = "💔 Select or describe the problem:"
 
-    await state.update_data(problem=[]) # Заранее..
+    # await state.update_data(problem=[]) # Заранее..
     await message.answer(message_text, reply_markup = build_keyboard(problems))
     await state.set_state(newOrder.problem)
 
@@ -227,11 +470,11 @@ async def sn_imei(message: types.Message, state: FSMContext):
     if lang == "ru":
         equipment = EQUIPMENT["ru"].copy() # !!!!!!!
         equipment.extend([MISS["ru"], OWN_VERSION["ru"], DONE["ru"], CANCEL["ru"]])
-        await message.answer("Комплектация (после выбора нажмите - Готово):", reply_markup = build_keyboard(equipment))
+        await message.answer("Выберите комплектацию сдаваемого устройства (завершить - нажать Готово):", reply_markup = build_keyboard(equipment))
     else:
         equipment = EQUIPMENT["en"].copy() # !!!!!!!
         equipment.extend([MISS["en"], OWN_VERSION["en"], DONE["en"], CANCEL["en"]])
-        await message.answer("Configuration (after selecting, click Done):", reply_markup = build_keyboard(equipment))
+        await message.answer("Select the configuration of the device to be delivered (complete - click Done):", reply_markup = build_keyboard(equipment))
     await state.set_state(newOrder.equipment)
 
 
@@ -293,7 +536,7 @@ async def brand_device(message: types.Message, state: FSMContext):
 
 
 
-
+# GO TO BRANDS
 async def process_device_type(device_type: str, lang: str, state: FSMContext, message: types.Message):
     """Общая логика обработки типа устройства"""
     # Получение брендов по типу устройства
@@ -342,55 +585,6 @@ async def type_device(message: types.Message, state: FSMContext):
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
-
-
-# async def process_device_type(device_type: str, lang: str, state: FSMContext, message: types.Message):
-#     """Общая логика обработки типа устройства"""
-#     # Получение брендов по типу устройства
-#     brands = get_brands(device_type)
-#     await state.update_data(device_type=device_type, brands=brands.copy())
-    
-#     if lang == "ru":
-#         brands.extend([OWN_VERSION["ru"], CANCEL["ru"]])
-#         text_message = "🔮 Выберите марку/бренд устройства"
-#     else:
-#         brands.extend([OWN_VERSION["en"], CANCEL["en"]])
-#         text_message = "🔮 Select the make/brand of the device"
-    
-#     await message.answer(text_message, reply_markup=build_keyboard(brands))
-#     await state.set_state(newOrder.brand)
-
-
-# # OTHER DEVICE
-# @router.message(newOrder.other_device)
-# async def other_device(message: types.Message, state: FSMContext):
-#     """Тип устройства свой вариант"""
-#     await typing(message)
-#     lang = message.from_user.language_code
-#     # Позже валидация
-#     device_type = message.text
-#     await process_device_type(device_type, lang, state, message)
-
-
-# # TYPE DEVICE  
-# @router.message(newOrder.device_type)
-# async def type_device(message: types.Message, state: FSMContext):
-#     """Тип сдаваемого устройства"""
-#     await typing(message)
-#     lang = message.from_user.language_code
-
-#     if message.text in (OWN_VERSION["ru"], OWN_VERSION["en"]):
-#         if lang == "ru": await message.answer("📝 Напишите cвой вариант:", reply_markup=ReplyKeyboardRemove())
-#         else: await message.answer("📝 Write your own version:", reply_markup=ReplyKeyboardRemove())
-#         await state.set_state(newOrder.other_device)
-
-#     elif message.text in set(DEVICES_RU + DEVICES_EN):
-#         device_type = message.text
-#         await process_device_type(device_type, lang, state, message)
-
-#     else:
-#         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
-#         else: await message.answer("🚫 Try again to select an item from the menu")
 
 
 # TYPE ORDER
