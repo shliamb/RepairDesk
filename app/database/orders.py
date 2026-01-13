@@ -93,8 +93,25 @@ class OrderService:
         if record:
             return dict(record)
         return {}
-
     
+
+    async def get_orders_by_statuses(self, statuses: list) -> list[dict]:
+        """Получить заказы с нужными статусами"""
+        if not statuses:
+            return []
+        
+        # Создаем плейсхолдеры: $1, $2, $3...
+        placeholders = ', '.join([f'${i+1}' for i in range(len(statuses))])
+        
+        query = f"SELECT * FROM orders WHERE status IN ({placeholders})"
+        
+        records = await self.db.fetch(query, *statuses)  # распаковываем статусы
+        return [dict(rec) for rec in records]
+
+
+
+
+
 
     # if not records:  # список пустой
     #     return {}

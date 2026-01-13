@@ -83,15 +83,8 @@ class Database:
             return await conn.execute(query, *args)
 
 
-    # async def fetchval_first(self, query, *args, column=0):
-    #     """Выполнить запрос и получить одно значение (первый столбец)"""
-    #     await self._ensure_connected()
-    #     async with self.pool.acquire() as conn:
-    #         return await conn.fetchval(query, *args)
-        
-
     async def fetchval(self, query, *args) -> str:
-        """Получить одно значение (например, RETURNING id)"""
+        """ Выполнить запрос и получить одно значение (например, RETURNING id)"""
         # для: SELECT id FROM ... или INSERT ... RETURNING id
         await self._ensure_connected()
         async with self.pool.acquire() as conn:

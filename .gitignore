@@ -8,5 +8,6 @@ app/database/__pycache__
 app/logs/__pycache__
 app/keyboards/__pycache__
 app/utils/__pycache__
+app/pdf/__pycache__
 app/test.py
 

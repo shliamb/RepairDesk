@@ -4,6 +4,7 @@ load_dotenv()
 
 
 
+
 #### BASIC CONFIG (set it up manually): ####
 DOCKER = False 
 LOG_TO_FILE = False
@@ -24,10 +25,28 @@ PATH_LOGS = "/logs" if DOCKER else "logs"
 
 ################ NEW ORDER CONST #####################
 
+STATUS_ORDER = ["new", "in_progress", "diagnostics", "waiting_parts", 
+                "ready", "completed", "canceled", "rejected", "postponed"]
+
+# Активные = все кроме ready, completed, canceled, rejected
+ACTIVE_STATUSES = ["new", "in_progress", "diagnostics", "waiting_parts", "postponed"]
+IN_PROGRESS_STATUSES = ["in_progress", "diagnostics", "waiting_parts"]
+READY_STATUSES = ["ready"]
+COMPLETED_STATUSES = ["completed"]
+ALL_20 = []
+
+
+# NEW_STATUSES = ["new"]
+# IN_PROGRESS_STATUSES = ["in_progress", "diagnostics", "waiting_parts"]
+# READY_STATUSES = ["ready"]
+# COMPLETED_STATUSES = ["completed"]
+# POSTPONED_STATUSES = ["postponed"]
+# CANCELED_STATUSES = ["canceled", "rejected"]
+
 
 PROBLEMS = {"ru": ["Не включается", "Не заряжается", "Нет изображения", "Греется", "Шумит", "Тормозит", "Зависает"], "en": ["Won't turn on", "Won't charge", "No image", "Heats up", "Makes noise", "Slows down", "Freezes"]}
 CANCEL =  {"ru": "🚫 Отмена", "en": "🚫 Cancellation"}
-ORDER = {"new_ru": "📝 Новый заказ", "new_en": "📝 New order"}
+ORDER = {"new_ru": "📝 Новый заказ", "new_en": "📝 New order", "activ_ru": "📋 Активные заказы", "activ_en": "📋 Active orders", "in_work_ru": "🔧 В работе", "in_work_en": "🔧 In progress", "ready_ru": "✅ Готовые", "ready_en": "✅ Ready", "stat_ru": "📊 Статистика", "stat_en": "📊 Statistics"}
 CLIENT = {"new_ru": "👨🏻‍💼 Создать клиента", "new_en": "👨🏻‍💼 Create a client", "serch_ru": "🔎 Найти клиента", "serch_en": "🔎 Find a client"}
 MISS = {"ru": "🎲 Пропустить", "en": "🎲 Miss"}
 TYPE_ORDER = {"paid_ru": "🤑 Платный", "guarant_ru": "🤬 Гарантийный", "paid_en": "🤑 Paid", "guarant_en": "🤬 Warranty period"}
@@ -48,17 +67,31 @@ PRINTER_BRANDS = ["HP", "Canon", "Epson", "Brother", "Xerox", "Kyocera", "Ricoh"
 CONSOLE_BRANDS = ["Sony", "Microsoft", "Nintendo", "Sega", "Atari"]
 PC = ["PC"]
 
+# DEVICE_BRANDS_RU = {
+#     "💻 Ноутбук": LAPTOP_BRANDS,
+#     "🖥 ПК": PC,
+#     "📱 Телефон": PHONE_BRANDS, # Комментирую если не использую
+#     "Видеокарта": GPU_BRANDS,
+#     "Материнская плата": MOTHERBOARD_BRANDS,
+#     "Монитор": MONITOR_BRANDS,
+#     "Планшет": TABLET_BRANDS,
+#     "Принтер": PRINTER_BRANDS,
+#     "Игровая консоль": CONSOLE_BRANDS
+# }
+
+
 DEVICE_BRANDS_RU = {
     "💻 Ноутбук": LAPTOP_BRANDS,
     "🖥 ПК": PC,
-    # "Телефон": PHONE_BRANDS, # Комментирую если не использую
-    "Видеокарта": GPU_BRANDS,
-    "Материнская плата": MOTHERBOARD_BRANDS,
-    # "Монитор": MONITOR_BRANDS,
-    "Планшет": TABLET_BRANDS,
-    # "Принтер": PRINTER_BRANDS,
-    "Игровая консоль": CONSOLE_BRANDS
+    # "📱 Телефон": PHONE_BRANDS,
+    "👾 Видеокарта": GPU_BRANDS,
+    "🧩 Материнская плата": MOTHERBOARD_BRANDS,
+    # "🖥️ Монитор": MONITOR_BRANDS,
+    "📟 Планшет": TABLET_BRANDS,
+    # "🖨️ Принтер": PRINTER_BRANDS,
+    "🎮 Игровая консоль": CONSOLE_BRANDS,
 }
+
 
 DEVICE_BRANDS_EN = {
     "💻 Laptop": LAPTOP_BRANDS,
@@ -121,15 +154,6 @@ ADRES = "Москва, 3-я Парковая, дом 38, +7 (999) 832-99-34"
 SITE = "www.1Rmaster.ru"
 
 CURRENCY = "RUB"
-
-# TELEGRAM_TO_REAL_NAMES = {
-#     123456789: "Иванов Иван",
-#     987654321: "Петров Петр",
-# }
-# Админ будет добавлять менеджеров из бота и дополнять реальные имена для доков, храниться в базе будет, позже..
-
-
-
 
 
 

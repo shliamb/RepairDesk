@@ -57,7 +57,8 @@ async def registration_telegram_user(message: types.Message, state: FSMContext) 
         'name': message.from_user.first_name,
         'language': lang,
         'admin': user_id == ADMIN_ID,
-        'time_reg': await day_utcnow()
+        'time_reg': await day_utcnow(),
+        'real_name': message.from_user.first_name, # Админ будет менять в админке для менеджеров
     })
 
     if not success:

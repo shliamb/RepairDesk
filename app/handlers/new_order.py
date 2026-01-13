@@ -10,6 +10,8 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
 from config import get_brands, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
 from keyboards.workshop import build_keyboard
+from datetime import datetime, timedelta
+import re
 from common import day_utcnow
 from database import db
 from database.orders import OrderService
@@ -36,6 +38,14 @@ def parse_cost(cost_text: str) -> Decimal:
     digits = ''.join(ch for ch in cost_text if ch.isdigit() or ch == '.')
     return Decimal(digits) if digits else Decimal('0')
 
+
+def add_days_from_text(text: str) -> datetime:
+    """Извлекает число дней из текста диагностики, возвращает дату ~ диагностики """
+    date = datetime.now()
+    days = int(re.search(r'\d+', text).group()) if re.search(r'\d+', text) else 0
+    new_date = date + timedelta(days=days) if days > 0 else date
+    day_str = new_date.strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.strptime(day_str, '%Y-%m-%d %H:%M:%S')
 
 
 class newOrder(StatesGroup):
@@ -64,7 +74,6 @@ class newOrder(StatesGroup):
     go_media = State()
 
 
-#{'user_id': UUID('4b912915-aee3-4ed0-ba76-c398d42006a4'), 'created_by': 1666495, 'client_id': UUID('4b912915-aee3-4ed0-ba76-c398d42006a4'), 'created_date': datetime.datetime(2026, 1, 11, 1, 50, 30), 'status': 'new', 'order_type': 'paid', 'device_type': '💻 Laptop', 'brands': ['Asus', 'Lenovo', 'HP', 'Dell', 'Acer', 'Apple', 'MSI', 'Toshiba', 'Sony', 'LG', 'Microsoft', 'Fujitsu', 'Alienware', 'Razer', 'DEXP', 'IRU', 'Huawei', 'Xiaomi', 'Honor', 'Samsung', 'Prestigio', 'DNS'], 'device_brand': 'Dell', 'device_model': '666', 'sn_imei': None, 'equipment': ['Device', 'Charging'], 'problem': ["Won't turn on"], 'appearance': ['Scuffs'], 'diagnostic_time': '1 day', 'cost_diagnostics': '1000 RUB'}
 
 
 # CANCEL STATE & KEYBOARD
@@ -84,6 +93,11 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
     """ Сохранение в базу заказа """
     await typing(message)
     state_data = await state.get_data()
+
+    manadger_data = await get_user_by_tg(state_data.get("created_by")) # 1 
+    #real_name_created = manadger_data.get("real_name", name_admin)
+    real_name_created = manadger_data.get("name")
+
     data = {
         "sn_imei": state_data.get("sn_imei", None),
         "status": state_data.get("status", "new"),
@@ -95,42 +109,32 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
         "problem": json.dumps(state_data.get("problem", []), ensure_ascii=False),
         "appearance": json.dumps(state_data.get("appearance", []), ensure_ascii=False),
         "created_date": state_data.get("created_date"),
-        "diagnosis_before": state_data.get("diagnosis_before"),
+        "diagnosis_before": add_days_from_text(state_data.get("diagnostic_time")),
         "cost_diagnostics": parse_cost(state_data.get("cost_diagnostics")), # Только цена
         "path_photo": None, #state_data.get("path_photo"),
         "client_id": state_data.get("client_id"),
-        "created_by": state_data.get("created_by")
+        "real_name_client": state_data.get("name"),
+        "created_by": state_data.get("created_by"),
+        "real_name_created": real_name_created,
     }
 
-    print("data:", data)
+    # Create order
+    order_number = await order.create_order(data) # 2
+    if not order_number:
+        # logging...
+        if lang == "ru": await message.answer("🚫 Извините, возникла ошибка.", reply_markup=ReplyKeyboardRemove())
+        else: await message.answer("🚫 Sorry, there was an error.", reply_markup=ReplyKeyboardRemove())
+        return
 
-
-    order_number = await order.create_order(data)
-    print(order_number)
-
-    # if order_number:
-    #     data = await order.get_order_order_number(order_number)
-    #     print(data)
-
-
-
-
-    client_data = await get_user_by_user_id(state_data.get("client_id"))
-    print(client_data)
-    name = client_data.get("name")
-    phone = client_data.get("phone")
-
-    
-    data["name"] = name
-    data["phone"] = phone
     data["order_number"] = order_number
+    # После сохранения, так как будет мешать
+    data["phone"] = state_data.get("phone")
     data["lang"] = lang
 
-    # print("data:", data)
-
+    # Build PDF file
     path_pdf = pdf.get_order_pdf(data)
-    # print(path_pdf)
 
+    # SEND PDF FILE
     send_text = "📄 Квитанция о приеме" if lang == "ru" else "📄 Admission receipt"
     await message.reply_document(
         document=types.input_file.FSInputFile(path_pdf),
@@ -662,10 +666,10 @@ async def order_type(message: types.Message, state: FSMContext):
 
 ######### START CREATE ORDER by USER_ID ##############
 # Можно будет вызывать как начало state..
-async def create_order(message: types.Message, state: FSMContext, user_id: uuid):
+async def create_order(message: types.Message, state: FSMContext, user_id: uuid, name: str, phone: str):
     """ Начало формирования заказа по user_id """
     lang = message.from_user.language_code
-    await state.update_data(user_id=user_id) # Чистый state, только user_id
+    await state.update_data(user_id=user_id, name=name, phone=phone) # Чистый state, только user_id, name, phone
     if lang == "ru": await message.answer("Выберите тип заказа:", reply_markup = build_keyboard([TYPE_ORDER["paid_ru"], TYPE_ORDER["guarant_ru"], CANCEL["ru"]])) 
     else: await message.answer("Select the order type:", reply_markup = build_keyboard([TYPE_ORDER["paid_en"], TYPE_ORDER["guarant_en"], CANCEL["en"]])) 
     await state.set_state(newOrder.order_type)
@@ -691,14 +695,14 @@ async def username_telegram(message: types.Message, state: FSMContext):
         if lang == "ru": await message.answer("🎉 Новый клиент сохранен.")
         else: await message.answer("🎉 The new client has been saved.")
     else:
-        if lang == "ru": await message.answer("🚫 Есть проблема с сохранением в базу клиента")
-        else: await message.answer("🚫 There is a problem with saving to the client's database")
+        if lang == "ru": await message.answer("🚫 Есть проблема с сохранением в базу клиента", reply_markup=ReplyKeyboardRemove())
+        else: await message.answer("🚫 There is a problem with saving to the client's database", reply_markup=ReplyKeyboardRemove())
         await state.clear()
         return
     if lang == "ru": await message.answer("Продолжим..")
     else: await message.answer("Continue..")
     await state.clear()
-    await create_order(message, state, user_id)
+    await create_order(message, state, user_id, name=state_data.get("name"), phone=state_data.get("phone"))
 
 
 # PHONE CLIENT
@@ -767,45 +771,3 @@ async def new_order(message: types.Message, state: FSMContext):
     await state.set_state(newOrder.client)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#lang = message.from_user.language_code
-# CANCEL_TEXTS = {
-#     "ru": "🚫 Отменено.",
-#     "en": "🚫 Cancelled",
-#     # "uk": "🚫 Скасовано",
-# }
-
-# text = CANCEL_TEXTS.get(lang, CANCEL_TEXTS["en"])
-# await message.answer(text, reply_markup=ReplyKeyboardRemove())

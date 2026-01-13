@@ -9,7 +9,7 @@ from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 # from keyboards import wskey
 from keyboards.workshop import build_keyboard
-from config import CANCEL
+from config import CANCEL, ORDER
 
 
 
@@ -30,8 +30,29 @@ async def workshop_panel(message: types.Message, state: FSMContext):
         await message.answer("🔐 You don't have access")
         return
     
-    if lang == "ru": await message.answer("⚙️ Выберите действие:", reply_markup = build_keyboard(["📝 Новый заказ", "📋 Активные заказы", "🔧 В работе", "✅ Готовые", "📊 Статистика", CANCEL["en"]])) 
-    else: await message.answer("👨🏻‍💼 Find a client or create anew:", reply_markup = build_keyboard(["📝 New order", "📋 Active orders", "🔧 In progress", "✅ Ready", "📊 Statistics", CANCEL["en"]])) 
+    buttons = []
+    if lang == "ru":
+        desc_text = "⚙️ Выберите действие:"
+        buttons.extend([
+            ORDER["new_ru"],
+            ORDER["activ_ru"],
+            ORDER["in_work_ru"],
+            ORDER["ready_ru"],
+            ORDER["stat_ru"],
+            CANCEL["ru"],
+        ])
+    else:
+        desc_text = "⚙️ Select an action:"
+        buttons.extend([
+            ORDER["new_en"],
+            ORDER["activ_en"],
+            ORDER["in_work_en"],
+            ORDER["ready_en"],
+            ORDER["stat_en"],
+            CANCEL["en"]
+        ])
+    await message.answer(desc_text, reply_markup = build_keyboard(buttons)) 
+     
 
 # CANCEL STATE & KEYBOARD
 @router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))

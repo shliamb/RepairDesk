@@ -51,6 +51,7 @@ def create_tables_in_db():
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,                                                              -- Serial номер внутренний, на всякий
             order_number VARCHAR(20) UNIQUE NOT NULL,                                           -- красивый (R-2024-0001)
+            location VARCHAR(50),                                                               -- Локация на будущее
             sn_imei VARCHAR(50),
             status VARCHAR(50),                                                                 -- Статус заказа (новый, в работе, готов..)
             order_type VARCHAR(50),                                                             -- Тип заказа (Платный, гарантийный)
@@ -64,11 +65,15 @@ def create_tables_in_db():
             completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
             diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
             cost_repair DECIMAL(10, 2),                                                         -- Стоимость ремонта
+            cost_of_parts DECIMAL(10, 2),  
             cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
+            guarantee VARCHAR(100),                                                             -- Гарантия (пока не придумал.. позже)
             path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства
             client_id UUID NOT NULL,                                                            -- user_id клиента заказа в UUID
+            real_name_client VARCHAR(50),                                                       -- Реальное имя клиента для документов (для уменьшения обращений к базе)
             created_by BIGINT NOT NULL,                                                         -- Оформил менеджер с телеграмм id
-            master UUID,                                                                        -- user_id мастера в UUID
+            real_name_created VARCHAR(50),                                                      -- Реальное имя принимающего для документов (для уменьшения обращений к базе) 
+            master UUID,                                                                        -- user_id мастера в UUID                                                
             edit_history JSONB,                                                                 -- Позже можно цепочку изменнений вносить, кто и когда менял
             comments TEXT,                                                                      -- Комментарии по ремонту
             completed_works JSONB,                                                              -- Выполненные работы в JSON
