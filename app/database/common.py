@@ -59,7 +59,7 @@ class Database:
         }
     
 
-    async def fetch(self, query, *args):
+    async def fetch(self, query, *args) -> list[dict]:
         """Выполнить SELECT и получить все строки"""
         # для: SELECT * FROM ...
         await self._ensure_connected()
@@ -67,7 +67,7 @@ class Database:
             return await conn.fetch(query, *args)
     
 
-    async def fetchrow(self, query, *args):
+    async def fetchrow(self, query, *args) -> dict:
         """Выполнить запрос и получить первую строку"""
         # для: SELECT ... LIMIT 1 или INSERT ... RETURNING
         await self._ensure_connected()
@@ -90,7 +90,7 @@ class Database:
     #         return await conn.fetchval(query, *args)
         
 
-    async def fetchval(self, query, *args):
+    async def fetchval(self, query, *args) -> str:
         """Получить одно значение (например, RETURNING id)"""
         # для: SELECT id FROM ... или INSERT ... RETURNING id
         await self._ensure_connected()

@@ -2,6 +2,7 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="db")
 from database import db
+import uuid
 # import asyncpg
 
 
@@ -25,7 +26,18 @@ async def add_user(user_data: dict) -> bool:
         return False
 
 
-async def get_user_by_tg(tg_id: int):
+async def get_user_by_tg(tg_id: int) -> dict:
     """Найти пользователя по Telegram ID"""
     query = "SELECT * FROM users WHERE user_telegram = $1"
-    return await db.fetchrow(query, tg_id)  # ← использовать fetchrow
+    record = await db.fetchrow(query, tg_id)
+    if record:
+        return dict(record)
+    return {}
+
+async def get_user_by_user_id(user_id: uuid) -> dict:
+    """Найти пользователя по Telegram ID"""
+    query = "SELECT * FROM users WHERE user_id = $1"
+    record = await db.fetchrow(query, user_id)
+    if record:
+        return dict(record)
+    return {}

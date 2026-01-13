@@ -2,7 +2,7 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
-from database.users import add_user, get_user_by_tg
+from database.users import add_user, get_user_by_tg, get_user_by_user_id
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -13,12 +13,14 @@ from keyboards.workshop import build_keyboard
 from common import day_utcnow
 from database import db
 from database.orders import OrderService
+from pdf.gen_pdf import BuildPDF
 from decimal import Decimal
 import uuid
 import json
 
 router = Router()
 order = OrderService(db)
+pdf = BuildPDF()
 
 """
 Че еще надо бы..
@@ -102,17 +104,41 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
 
     print("data:", data)
 
+
     order_number = await order.create_order(data)
     print(order_number)
 
-    if order_number:
-        data = await order.get_order_order_number(order_number)
-        print(data)
+    # if order_number:
+    #     data = await order.get_order_order_number(order_number)
+    #     print(data)
 
 
-    if lang == "ru": await message.answer("Готово бля..", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("🚫 Done yep..", reply_markup=ReplyKeyboardRemove())
 
+
+    client_data = await get_user_by_user_id(state_data.get("client_id"))
+    print(client_data)
+    name = client_data.get("name")
+    phone = client_data.get("phone")
+
+    
+    data["name"] = name
+    data["phone"] = phone
+    data["order_number"] = order_number
+    data["lang"] = lang
+
+    # print("data:", data)
+
+    path_pdf = pdf.get_order_pdf(data)
+    # print(path_pdf)
+
+    send_text = "📄 Квитанция о приеме" if lang == "ru" else "📄 Admission receipt"
+    await message.reply_document(
+        document=types.input_file.FSInputFile(path_pdf),
+        caption=send_text
+    )
+
+    if lang == "ru": await message.answer("👍 Заказ принят", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("👍 The order is accepted", reply_markup=ReplyKeyboardRemove())
 
 
 

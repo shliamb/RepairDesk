@@ -27,6 +27,7 @@ def create_tables_in_db():
             phone VARCHAR(20) UNIQUE,
             email VARCHAR(100) UNIQUE,
             name VARCHAR(50),
+            real_name VARCHAR(50),                                                              -- Админ добавляет менеджеров и устанавливаем им реальные имена для доков
             description_user VARCHAR(200),                                                      -- Описание пользователя, для внутреннего использования
             source VARCHAR(200),                                                                -- Источник рекламы
             block BOOLEAN DEFAULT FALSE,                                                        -- Блок для пид..ов
