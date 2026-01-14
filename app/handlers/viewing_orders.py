@@ -8,34 +8,27 @@ from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeybo
 # from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import get_brands, ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES
+from config import get_brands, ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER
 from keyboards.workshop import build_keyboard
 from database import db
-from decimal import Decimal
-import asyncio
+# from decimal import Decimal
+# import asyncio
 import json
-
-
-
 
 
 router = Router()
 order = OrderService(db)
 
-
-
-
-
-
-class newOrder(StatesGroup):
-    active = State()
+class Order(StatesGroup):
+    edit = State()
+    action = State()
 
 
 
 
 
 
-
+# OUTPUTTING ORDERS TO THE TELEGRAMM BOT
 async def push_orders_bot(message: types.Message, lang: str, records: list):
     """ Вывод заказов в телеграмм боте.
     
@@ -64,8 +57,10 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
         problem = ", ".join(problem.copy())
         status = one.get("status")
         created_date = one.get("created_date")
+        created_date = created_date.strftime("%d.%m.%y %H:%M")
         diagnosis_before = one.get("diagnosis_before")
-        cost_diagnostics = one.get("cost_diagnostics")
+        diagnosis_before = diagnosis_before.strftime("%d.%m.%y %H:%M")
+        cost_diagnostics = int(one.get("cost_diagnostics"))
 
         order_ru = (
             f'<b>📋 Заказ: {order_number}</b> {"🤑" if order_type == "paid" else "🤬"}\n\n'
@@ -74,7 +69,7 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
             f'<b>{device_type}:</b> {device_brand} {device_model}\n'
             f'<b>👨‍💻 Принял:</b> {real_name_created} {created_date}\n'
             f'<b>⏰ Диагностика до:</b> {diagnosis_before}\n'
-            f'<b>💰 Стоимость диагностики:</b> {cost_diagnostics}\n\n'
+            f'<b>💰 Стоимость диагностики:</b> {cost_diagnostics} {CURRENCY}\n\n'
             f'<b>⚠️ Неисправность:</b> {problem}\n'
         )
 
@@ -85,18 +80,14 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
             f'<b>{device_type}:</b> {device_brand} {device_model}\n'
             f'<b>👨‍💻 Has accepted:</b> {real_name_created} {created_date}\n'
             f'<b>⏰ Diagnosis before:</b> {diagnosis_before}\n'
-            f'<b>💰 The cost of diagnosis:</b> {cost_diagnostics}\n\n'
+            f'<b>💰 The cost of diagnosis:</b> {cost_diagnostics} {CURRENCY}\n\n'
             f'<b>⚠️ Malfunction:</b> {problem}\n'
         )
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [
-                InlineKeyboardButton(text=f"{'📝 Изменить' if lang == 'ru' else '📝 Сhange'}", callback_data=f"edit_order_{id}"),
-                InlineKeyboardButton(text=f"{'📸 Фото' if lang == 'ru' else '📸 Photo'}", callback_data=f"view_photos_{id}"),
-            ],
-            [
-                InlineKeyboardButton(text=f"{'📄 PDF' if lang == 'ru' else '📄 PDF'}", callback_data=f"get_pdf_{id}"),
-                InlineKeyboardButton(text=f"{'📤 Выдать' if lang == 'ru' else '📤 Issue'}", callback_data=f"issue_order_{id}"),
+                InlineKeyboardButton(text=f'{VIEW_ORDER["change_ru"] if lang == "ru" else VIEW_ORDER["change_en"]}', callback_data=f"edit_order_{id}"),
+                InlineKeyboardButton(text=f'{VIEW_ORDER["action_ru"] if lang == "ru" else VIEW_ORDER["action_en"]}', callback_data=f"action_order_{id}")
             ]
         ])
         
@@ -107,49 +98,36 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
 
 # EDIT ORDER
 @router.callback_query(F.data.startswith("edit_order_"))
-async def edit_order(callback: types.CallbackQuery):
-    """ Редактировать заказ """
+async def edit_order(callback: types.CallbackQuery, state: FSMContext):
+    """ Выбор объекта изменения под каждым заказом """
     id = callback.data.split("_")[-1]  # вытащить ID
-    await callback.message.answer(f"Редактируем заказ {id}")
+    lang = callback.message.from_user.language_code
+    #await callback.message.answer(f"Редактируем заказ {id}")
+    # await callback.message.answer(f"process_edit_order_{id}", parse_mode=None)
+    if lang == "ru": buttons = [CHANGE_ORDER["order_ru"], CHANGE_ORDER["client_ru"], CHANGE_ORDER["status_ru"], CANCEL["ru"]]
+    else: buttons = [CHANGE_ORDER["order_en"], CHANGE_ORDER["client_en"], CHANGE_ORDER["status_en"], CANCEL["en"]]
+    if lang == "ru": intro_text = f"Выберите что будем менять по заказу {id}:"
+    else: intro_text = f"Choose what we will change for the order {id}:"
+    await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
+    await state.update_data(id=id)
+    await state.set_state(Order.edit)
     await callback.answer()
 
 
-# GET PHOTO ORDER
-@router.callback_query(F.data.startswith("view_photos_"))
-async def view_photos(callback: types.CallbackQuery):
-    """ Фотографии уустройства при приёме заказа """
+# ACTION ORDER
+@router.callback_query(F.data.startswith("action_order_"))
+async def action_order(callback: types.CallbackQuery, state: FSMContext):
+    """ Выбор действий под каждым заказом """
     id = callback.data.split("_")[-1]
-    await callback.message.answer(f"Фотографии принятого устройства заказа {id}")
+    lang = callback.message.from_user.language_code
+    if lang == "ru": buttons = [ACTION_ORDER["get_photo_ru"], ACTION_ORDER["get_pdf_ru"], ACTION_ORDER["issue_ru"], CANCEL["ru"]]
+    else: buttons = [ACTION_ORDER["get_photo_en"], ACTION_ORDER["get_pdf_en"], ACTION_ORDER["issue_en"], CANCEL["en"]]
+    if lang == "ru": intro_text = f"Выберите ействие по заказу {id}:"
+    else: intro_text = f"Select the product by order {id}:"
+    await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
+    await state.update_data(id=id)
+    await state.set_state(Order.action)
     await callback.answer()
-
-
-# GET PDF ORDER
-@router.callback_query(F.data.startswith("get_pdf_"))
-async def get_pdf(callback: types.CallbackQuery):
-    """ PDF заказа """
-    id = callback.data.split("_")[-1]
-    await callback.message.answer(f"PDF заказа {id}")
-    await callback.answer()
-
-
-# ISSUE ORDER
-@router.callback_query(F.data.startswith("issue_order_"))
-async def issue_order(callback: types.CallbackQuery):
-    """ Выдать заказ """
-    id = callback.data.split("_")[-1]
-    await callback.message.answer(f"Выдаю заказ {id}")
-    await callback.answer()
-
-
-# CANCEL STATE & KEYBOARD
-@router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
-async def cancel(message: types.Message, state: FSMContext): 
-    """ Отмена / Cancelled """
-    await typing(message)
-    lang = message.from_user.language_code
-    await state.clear()
-    if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
 
 
 # START GET ACTIVE ORDERS
@@ -215,4 +193,7 @@ async def get_statistic(message: types.Message):#, state: FSMContext):
         await message.answer("🔐 You don't have access")
         return
     
-    await message.answer("Статистика")
+    stats = await db.get_pool_stats()
+    print(f"Статистика: {json.dumps(stats, indent=2)}")
+    await message.answer(f"Статистика: total: {stats}", parse_mode=None)
+    # await message.answer(f"Статистика: total: {stats.get("total")}, used: {stats.get("used")}, idle: {stats.get("idle")}, percent_used: {stats.get("percent_used")}")

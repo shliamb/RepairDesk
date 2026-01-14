@@ -54,15 +54,15 @@ async def workshop_panel(message: types.Message, state: FSMContext):
     await message.answer(desc_text, reply_markup = build_keyboard(buttons)) 
      
 
-# CANCEL STATE & KEYBOARD
-@router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
-async def cancel(message: types.Message, state: FSMContext): 
-    """ Отмена / Cancelled """
-    await typing(message)
-    lang = message.from_user.language_code
-    await state.clear()
-    if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
+# # CANCEL STATE & KEYBOARD
+# @router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
+# async def cancel(message: types.Message, state: FSMContext): 
+#     """ Отмена / Cancelled """
+#     await typing(message)
+#     lang = message.from_user.language_code
+#     await state.clear()
+#     if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
+#     else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
 
 
 

@@ -178,37 +178,54 @@ async def forced_start(message: types.Message)-> None:
 
 
 
-
-
-
-
-
 async def main_bot() -> None:
-    # 1. Подключаемся к БД
     await db.connect()
-    #logger_bot.info("Database connected")
-    
-    # # 2. Можно добавить db в контекст диспетчера
-    # dp['db'] = db
 
-    
-    # 3. Запускаем бота
     try:
         await dp.start_polling(bot, skip_updates=False)
-
-
+    except asyncio.CancelledError:
+        print("📢 Бот получил сигнал остановки")
+        raise
     finally:
-        # 4. Всегда закрываем соединение
+        print("🔒 Закрываем пул БД...")
         await db.close()
-        logger.info("Database connection closed")
+
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main_bot())
     except KeyboardInterrupt:
-        #logger_bot.info("Bot stopped by user")
-        pass
-    except Exception as e:
-        #logger_bot.error(f"Unexpected error: {e}")
-        print(f"An error occurred: {e}")
+        print("\n🛑 Ctrl+C - остановка")
+    finally:
+        # Это выполнится ВСЕГДА
+        print("Завершение работы...")
+
+
+
+
+
+
+
+    # finally:
+    #     # monitor_task.cancel()  # останавливаем мониторинг
+    #     # await db.close()
+    #     # logger.info("Database connection closed")
+    #     # print("✅ Ресурсы освобождены")
+    #     print("\n🛑 Останавливаем бота...")
+    #     # Создаём новую петлю для закрытия
+    #     loop = asyncio.new_event_loop()
+    #     loop.run_until_complete(db.close())
+    #     loop.close()
+
+
+# if __name__ == "__main__":
+#     try:
+#         asyncio.run(main_bot())
+#     except KeyboardInterrupt:
+#         asyncio.create_task(db.close())
+#         #logger_bot.info("Bot stopped by user")
+#         print("\n🛑 Бот остановлен пользователем")
+#     except Exception as e:
+#         #logger_bot.error(f"Unexpected error: {e}")
+#         print(f"An error occurred: {e}")

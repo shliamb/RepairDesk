@@ -24,9 +24,12 @@ class Database:
                 min_size=5, # 5 соединений всегда готовы
                 max_size=50, # максимум 50 одновременных
                 max_queries=50000, # после 50к запросов - пересоздать соединение
-                timeout=30 # ждать свободное соединение 30 секунд
+                timeout=30, # ждать свободное соединение 30 секунд
+                max_inactive_connection_lifetime=300  # закрывать неиспользуемые через 5 мин
             )
             logger.info("Database pool created")
+            print(await self.get_pool_stats())
+
         return self.pool
 
 
@@ -36,6 +39,8 @@ class Database:
             await self.pool.close()
             self.pool = None
             logger.info("Database pool closed")
+            stat = await self.get_pool_stats()
+            print(f"Pool is closed {stat}")
 
 
     async def _ensure_connected(self):
@@ -47,17 +52,19 @@ class Database:
     async def get_pool_stats(self):
         """Получить статистику пула"""
         if not self.pool:
-            return "Пул не инициализирован. Вызовите await db.connect()"
-        size = await self.pool.get_size()
-        used = await self.pool.get_current_connection_count()
-        free = size - used
+            return "Пул не создан"
+        
+        total = self.pool.get_size()      # всего соединений
+        idle = self.pool.get_idle_size()  # свободных сейчас
+        used = total - idle                     # занятых
+        #print(f"Total: {total}, Idle: {idle}, Used: {used}")
         return {
-            "total": size,
+            "total": total,
             "used": used,
-            "free": free,
-            "free_percent": (free / size * 100) if size > 0 else 0
+            "idle": idle,
+            "percent_used": (used / total * 100) if total > 0 else 0
         }
-    
+        
 
     async def fetch(self, query, *args) -> list[dict]:
         """Выполнить SELECT и получить все строки"""

@@ -56,6 +56,9 @@ EQUIPMENT = {"ru": ["Устройство", "Зарядка", "Пакет", "С�
 APPEARANCE = {"ru": ["Потёртости", "Царапины", "Сколы"], "en": ["Scuffs", "Scratches", "Chips"]}
 DIAGNOSTIC_TIME = {"ru": ["Без диагностики", "1 день", "2 дня", "3 дня", "Без ограничений"], "en": ["No diagnosis", "1 day", "2 days", "3 days", "Unlimited"]}
 COST_DIAGNOSTIC = {"ru": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"], "en": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"]}
+VIEW_ORDER = {"change_ru": "✏️ Изменить", "change_en": "✏️ Сhange", "action_ru": "⚡ Действия", "action_en": "⚡ Actions"}
+CHANGE_ORDER = {"order_ru": "📋 Заказ", "order_en": "📋 Order", "client_ru": "🙋 Клиент", "client_en": "🙋 Client", "status_ru": "📊 Статус", "status_en": "📊 Status"}
+ACTION_ORDER = {"get_photo_ru": "📸 Фото", "get_photo_en": "📸 Photo", "get_pdf_ru": "📄 PDF", "get_pdf_en": "📄 PDF", "issue_ru": "📤 Выдать заказ", "issue_en": "📤 Issue an order"}
 
 LAPTOP_BRANDS = ["Asus", "Lenovo", "HP", "Dell", "Acer", "Apple", "MSI", "Toshiba", "Sony", "LG", "Microsoft", "Fujitsu", "Alienware", "Razer", "DEXP", "IRU", "Huawei", "Xiaomi", "Honor", "Samsung", "Prestigio", "DNS"]
 PHONE_BRANDS = ["Samsung", "Apple", "Xiaomi", "Huawei", "Honor", "Realme", "Vivo", "Oppo", "OnePlus", "Nokia", "Sony", "Google", "ZTE", "Motorola", "Alcatel", "Philips", "Texet", "BQ", "Meizu", "Asus"]
@@ -66,19 +69,6 @@ TABLET_BRANDS = ["Apple", "Samsung", "Lenovo", "Huawei", "Xiaomi", "Asus", "Micr
 PRINTER_BRANDS = ["HP", "Canon", "Epson", "Brother", "Xerox", "Kyocera", "Ricoh", "Samsung", "Pantum", "Lexmark"]
 CONSOLE_BRANDS = ["Sony", "Microsoft", "Nintendo", "Sega", "Atari"]
 PC = ["PC"]
-
-# DEVICE_BRANDS_RU = {
-#     "💻 Ноутбук": LAPTOP_BRANDS,
-#     "🖥 ПК": PC,
-#     "📱 Телефон": PHONE_BRANDS, # Комментирую если не использую
-#     "Видеокарта": GPU_BRANDS,
-#     "Материнская плата": MOTHERBOARD_BRANDS,
-#     "Монитор": MONITOR_BRANDS,
-#     "Планшет": TABLET_BRANDS,
-#     "Принтер": PRINTER_BRANDS,
-#     "Игровая консоль": CONSOLE_BRANDS
-# }
-
 
 DEVICE_BRANDS_RU = {
     "💻 Ноутбук": LAPTOP_BRANDS,
@@ -92,17 +82,16 @@ DEVICE_BRANDS_RU = {
     "🎮 Игровая консоль": CONSOLE_BRANDS,
 }
 
-
 DEVICE_BRANDS_EN = {
     "💻 Laptop": LAPTOP_BRANDS,
     "🖥 PC": PC,
-    # "Phone": PHONE_BRANDS,
-    "Gpu": GPU_BRANDS,
-    "Motherboard": MOTHERBOARD_BRANDS,
-    # "Monitor": MONITOR_BRANDS,
-    "Tablet": TABLET_BRANDS,
-    # "Printer": PRINTER_BRANDS,
-    "Console": CONSOLE_BRANDS
+    # "📱 Phone": PHONE_BRANDS,
+    "👾 Gpu": GPU_BRANDS,
+    "🧩 Motherboard": MOTHERBOARD_BRANDS,
+    # "🖥️ Monitor": MONITOR_BRANDS,
+    "📟 Tablet": TABLET_BRANDS,
+    # "🖨️ Printer": PRINTER_BRANDS,
+    "🎮 Console": CONSOLE_BRANDS
 }
 
 PREFIXES = {

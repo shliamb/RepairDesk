@@ -12,7 +12,7 @@ from config import get_brands, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEV
 from keyboards.workshop import build_keyboard
 from datetime import datetime, timedelta
 import re
-from common import day_utcnow
+# from common import day_utcnow
 from database import db
 from database.orders import OrderService
 from pdf.gen_pdf import BuildPDF
@@ -76,7 +76,7 @@ class newOrder(StatesGroup):
 
 
 
-# CANCEL STATE & KEYBOARD
+# CANCEL STATE & KEYBOARD TO ALL HANDLERS !!!
 @router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
 async def cancel(message: types.Message, state: FSMContext): 
     """ Отмена / Cancelled """
@@ -641,7 +641,7 @@ async def order_type(message: types.Message, state: FSMContext):
     state_data = await state.get_data() # В нём только ser_id
     client_id = state_data.get("user_id")
     created_by = message.from_user.id
-    created_date = await day_utcnow()
+    created_date = datetime.now()
     status = "new"
     await state.update_data( 
         created_by=created_by,
@@ -687,7 +687,8 @@ async def username_telegram(message: types.Message, state: FSMContext):
         username_telegram = None
     # Проверка в базе и предупреждение + варианты действий + валидация телеграм @name + валидация ввода 
     user_id = uuid.uuid4()
-    time_reg = await day_utcnow()
+    time_reg = datetime.now()
+
     await state.update_data(username_telegram=username_telegram, time_reg=time_reg, user_id=user_id)
     state_data = await state.get_data()
     # Create USER

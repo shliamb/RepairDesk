@@ -66,8 +66,14 @@ class BuildPDF():
         self.problem = json.loads(data_pdf.get("problem")) if data_pdf.get("problem") else None
         self.appearance = json.loads(data_pdf.get("appearance")) if data_pdf.get("appearance") else None
         self.created_date = data_pdf.get("created_date")
-        diagnosis_before = str(data_pdf.get("diagnosis_before"))
-        self.diagnosis_before = diagnosis_before[:-3] 
+
+        # diagnosis_before = str(data_pdf.get("diagnosis_before"))
+        # self.diagnosis_before = diagnosis_before[:-3] 
+
+        diagnosis_before = data_pdf.get("diagnosis_before")
+        self.diagnosis_before = diagnosis_before.strftime("%d.%m.%y %H:%M") # Для PDF
+
+
         self.cost_diagnostics = data_pdf.get("cost_diagnostics")
         self.path_photo = data_pdf.get("path_photo")
         #self.client_id = data_pdf.get("client_id")
