@@ -94,6 +94,36 @@ DEVICE_BRANDS_EN = {
     "🎮 Console": CONSOLE_BRANDS
 }
 
+
+ORDER_STATUS_RU = {
+    'new': 'Новый заказ 🟢',
+    'diagnosis': ('🟡 Диагностика', 'идет диагностика'),
+    'waiting_parts': ('🟣 Ожидание запчастей', 'ждем детали'),
+    'repair': ('🟠 В ремонте', 'активный ремонт'),
+    'testing': ('🔵 Тестирование', 'тестирование после ремонта'),
+    'ready': ('🟣 Готов к выдаче', 'ремонт завершен'),
+    'completed': ('✅ Завершен', 'выдан клиенту'),
+    'cancelled': ('❌ Отменен', 'заказ отменен'),
+    'waiting_payment': ('💰 Ожидание оплаты', 'ждем оплаты'),
+    'warranty': ('🛡️ Гарантия', 'гарантийный случай')
+}
+
+statuses_en = {
+    'new': ('🟢 New', 'new order, not started'),
+    'diagnosis': ('🟡 Diagnosis', 'diagnosis in progress'),
+    'waiting_parts': ('🟣 Waiting for parts', 'awaiting components'),
+    'repair': ('🟠 Repair', 'active repair work'),
+    'testing': ('🔵 Testing', 'post-repair testing'),
+    'ready': ('🟣 Ready for pickup', 'repair completed'),
+    'completed': ('✅ Completed', 'collected by customer'),
+    'cancelled': ('❌ Cancelled', 'order cancelled'),
+    'waiting_payment': ('💰 Awaiting payment', 'waiting for payment'),
+    'warranty': ('🛡️ Warranty', 'warranty case')
+}
+
+
+
+
 PREFIXES = {
     'guarant': 'GR',    # гарантийный
     'paid': 'PD',       # платный
@@ -142,7 +172,7 @@ ADRES = "Москва, 3-я Парковая, дом 38, +7 (999) 832-99-34"
 
 SITE = "www.1Rmaster.ru"
 
-CURRENCY = "RUB"
+CURRENCY = "₽"
 
 
 

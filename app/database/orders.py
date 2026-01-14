@@ -79,14 +79,16 @@ class OrderService:
             return "Error"
 
 
-    async def get_order_id(self, id: int):
+    async def get_order_id(self, id: int) -> dict:
         """ Получить заказ по его ID"""
         query = "SELECT * FROM orders WHERE id = $1"
-        records = await self.db.fetch(query, id)
-        return [dict(rec) for rec in records]
+        record = await self.db.fetchrow(query, id)
+        if record:
+            return dict(record)
+        return {}
     
 
-    async def get_order_order_number(self, order_number: str):
+    async def get_order_order_number(self, order_number: str) -> dict:
         """ Получить заказ по его order_number"""
         query = "SELECT * FROM orders WHERE order_number = $1"
         record = await self.db.fetchrow(query, order_number)
