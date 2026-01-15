@@ -4,17 +4,12 @@ from fpdf import FPDF
 from datetime import datetime
 from logs.set_logger import set_logger
 logger = set_logger(name="pdf")
+from utils.formatters import remove_emojis, format_phone, format_date_nice
 from config import CONDITIONS, ADRES, SITE, CURRENCY
 import json
 
 
 
-
-
-def remove_emojis(text: str) -> str:
-    """Удаляет эмодзи (простая версия)"""
-    import re
-    return re.sub(r'[^\w\s,.!?;:()\-@#%&*+=/\\|"\'<>$€£¥₹₽]', '', str(text))
 
 
 
@@ -87,7 +82,7 @@ class BuildPDF():
 
         self.order_data_ru = ({
             'Клиент': self.name_client,
-            'Телефон': self.phone_client,
+            'Телефон': format_phone(self.phone_client),
             'Марка/модель': f'{self.device_type} {self.device_brand} ({self.device_model})',
             'SN/imei': self.sn_imei,
             'Комплектация': self.equipment,
@@ -98,7 +93,7 @@ class BuildPDF():
         }).copy()
         self.order_data_en = ({
             'Name': self.name_client,
-            'Phone': self.phone_client,
+            'Phone': format_phone(self.phone_client),
             'Brand/Model': f'{self.device_type} {self.device_brand} ({self.device_model})',
             'SN/imei': self.sn_imei,
             'Equipment': self.equipment,

@@ -2,13 +2,15 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
+from utils.formatters import remove_emojis, format_phone, format_date_nice
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 # from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import get_brands, ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU
+from config import get_brands, ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
+    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU
 from keyboards.workshop import build_keyboard
 from database import db
 # from decimal import Decimal
@@ -24,49 +26,49 @@ class Order(StatesGroup):
     action = State()
 
 
-from datetime import datetime
+# from datetime import datetime
 
-def format_date_localized(dt: datetime, lang: str) -> str:
-    """
-    Форматирует дату на русском или английском языке
+# def format_date_localized(dt: datetime, lang: str) -> str:
+#     """
+#     Форматирует дату на русском или английском языке
     
-    Args:
-        dt: datetime объект
-        lang: язык ('ru' или 'en')
+#     Args:
+#         dt: datetime объект
+#         lang: язык ('ru' или 'en')
     
-    Returns:
-        Строка с отформатированной датой
-    """
-    if lang == "ru":
-        months = {
-            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-            5: "мая", 6: "июня", 7: "июля", 8: "августа",
-            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
-        }
-        month_name = months[dt.month]
-        return f"{dt.day} {month_name} {dt.year}" #, {dt.strftime('%H:%M')}"
+#     Returns:
+#         Строка с отформатированной датой
+#     """
+#     if lang == "ru":
+#         months = {
+#             1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+#             5: "мая", 6: "июня", 7: "июля", 8: "августа",
+#             9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
+#         }
+#         month_name = months[dt.month]
+#         return f"{dt.day} {month_name} {dt.year}" #, {dt.strftime('%H:%M')}"
     
-    elif lang == "en":
-        # Английские названия месяцев
-        months = {
-            1: "January", 2: "February", 3: "March", 4: "April",
-            5: "May", 6: "June", 7: "July", 8: "August",
-            9: "September", 10: "October", 11: "November", 12: "December"
-        }
-        month_name = months[dt.month]
+#     elif lang == "en":
+#         # Английские названия месяцев
+#         months = {
+#             1: "January", 2: "February", 3: "March", 4: "April",
+#             5: "May", 6: "June", 7: "July", 8: "August",
+#             9: "September", 10: "October", 11: "November", 12: "December"
+#         }
+#         month_name = months[dt.month]
         
-        # Определяем суффикс для дня (st, nd, rd, th)
-        day = dt.day
-        if 4 <= day <= 20 or 24 <= day <= 30:
-            suffix = "th"
-        else:
-            suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+#         # Определяем суффикс для дня (st, nd, rd, th)
+#         day = dt.day
+#         if 4 <= day <= 20 or 24 <= day <= 30:
+#             suffix = "th"
+#         else:
+#             suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
         
-        return f"{day}{suffix} {month_name} {dt.year}" #, {dt.strftime('%H:%M')}"
+#         return f"{day}{suffix} {month_name} {dt.year}" #, {dt.strftime('%H:%M')}"
     
-    else:
-        # Fallback на английский
-        return dt.strftime("%d %B %Y, %H:%M")
+#     else:
+#         # Fallback на английский
+#         return dt.strftime("%d %B %Y, %H:%M")
 
 
 
@@ -99,9 +101,9 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
         problem = ", ".join(problem.copy())
         status = one.get("status")
         created_date = one.get("created_date")
-        created_date = format_date_localized(created_date, lang) #created_date.strftime("%d.%m.%y %H:%M")
+        created_date = format_date_nice(created_date, lang) #created_date.strftime("%d.%m.%y %H:%M")
         diagnosis_before = one.get("diagnosis_before")
-        diagnosis_before = format_date_localized(diagnosis_before, lang) #diagnosis_before.strftime("%d.%m.%y %H:%M")
+        diagnosis_before = format_date_nice(diagnosis_before, lang) #diagnosis_before.strftime("%d.%m.%y %H:%M")
         cost_diagnostics = int(one.get("cost_diagnostics"))
 
 
@@ -143,16 +145,16 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
 @router.callback_query(F.data.startswith("edit_order_"))
 async def edit_order(callback: types.CallbackQuery, state: FSMContext):
     """ Выбор объекта изменения под каждым заказом """
+    lang = callback.from_user.language_code
     id = callback.data.split("_")[-1]  # вытащить ID
     if not isinstance(id, int): id = int(id)
     else: logger.error(f"{id} is not digit")
-    lang = callback.message.from_user.language_code
     #await callback.message.answer(f"Редактируем заказ {id}")
     # await callback.message.answer(f"process_edit_order_{id}", parse_mode=None)
     if lang == "ru": buttons = [CHANGE_ORDER["order_ru"], CHANGE_ORDER["client_ru"], CHANGE_ORDER["status_ru"], CANCEL["ru"]]
     else: buttons = [CHANGE_ORDER["order_en"], CHANGE_ORDER["client_en"], CHANGE_ORDER["status_en"], CANCEL["en"]]
-    if lang == "ru": intro_text = f"Выберите что будем менять по заказу:"
-    else: intro_text = f"Choose what we will change for the order:"
+    if lang == "ru": intro_text = f"Выберите действие по заказу:"
+    else: intro_text = f"Select the order action:"
     await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
     await state.update_data(id=id)
     await state.set_state(Order.edit)
@@ -163,10 +165,10 @@ async def edit_order(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith("action_order_"))
 async def action_order(callback: types.CallbackQuery, state: FSMContext):
     """ Выбор действий под каждым заказом """
+    lang = callback.from_user.language_code
     id = callback.data.split("_")[-1]
     if not isinstance(id, int): id = int(id)
     else: logger.error(f"{id} is not digit")
-    lang = callback.message.from_user.language_code
     if lang == "ru": buttons = [ACTION_ORDER["get_photo_ru"], ACTION_ORDER["get_pdf_ru"], ACTION_ORDER["issue_ru"], CANCEL["ru"]]
     else: buttons = [ACTION_ORDER["get_photo_en"], ACTION_ORDER["get_pdf_en"], ACTION_ORDER["issue_en"], CANCEL["en"]]
     if lang == "ru": intro_text = f"Выберите ействие по заказу {id}:"

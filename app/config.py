@@ -28,6 +28,27 @@ PATH_LOGS = "/logs" if DOCKER else "logs"
 STATUS_ORDER = ["new", "in_progress", "diagnostics", "waiting_parts", 
                 "ready", "completed", "canceled", "rejected", "postponed"]
 
+ORDER_STATUS_RU = {
+    'new': 'Новый',
+    'diagnosis': 'Диагностика',
+    'repair': 'В ремонте',
+    'testing': 'Тестирование',
+    'ready': 'Готов к выдаче',
+    'completed': 'Завершен',
+    'cancelled': 'Отменен',
+}
+
+
+ORDER_STATUS_EN = {
+    'new': 'New',
+    'diagnosis': 'Diagnosis',
+    'repair': 'In repair',
+    'testing': 'Testing',
+    'ready': 'Ready for pickup',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled',
+}
+
 # Активные = все кроме ready, completed, canceled, rejected
 ACTIVE_STATUSES = ["new", "in_progress", "diagnostics", "waiting_parts", "postponed"]
 IN_PROGRESS_STATUSES = ["in_progress", "diagnostics", "waiting_parts"]
@@ -43,6 +64,15 @@ ALL_20 = []
 # POSTPONED_STATUSES = ["postponed"]
 # CANCELED_STATUSES = ["canceled", "rejected"]
 
+ORDER_STATUS_COLOR = {
+    'new': '🟢',
+    'diagnosis': '🟡',
+    'repair': '🟠',
+    'testing': '🔵',
+    'ready': '🟣',
+    'completed': '✅',
+    'cancelled': '❌',
+}
 
 PROBLEMS = {"ru": ["Не включается", "Не заряжается", "Нет изображения", "Греется", "Шумит", "Тормозит", "Зависает"], "en": ["Won't turn on", "Won't charge", "No image", "Heats up", "Makes noise", "Slows down", "Freezes"]}
 CANCEL =  {"ru": "🚫 Отмена", "en": "🚫 Cancellation"}
@@ -70,58 +100,57 @@ PRINTER_BRANDS = ["HP", "Canon", "Epson", "Brother", "Xerox", "Kyocera", "Ricoh"
 CONSOLE_BRANDS = ["Sony", "Microsoft", "Nintendo", "Sega", "Atari"]
 PC = ["PC"]
 
+DEVICE_ICO = {
+
+    # RU:
+    "Ноутбук": "💻",
+    "ПК": "🖥",
+    "Телефон": "📱",
+    "Видеокарта": "👾",
+    "Материнская плата": "🧩",
+    "Монитор": "🖥️",
+    "Планшет": "📟",
+    "Принтер": "🖨️",
+    "Игровая консоль": "🎮",
+    "Другое": "⚙️",
+
+    # EN:
+    "Laptop": "💻",
+    "PC": "🖥",
+    "Phone": "📱",
+    "GPU": "👾",
+    "Motherboard": "🧩",
+    "Monitor": "🖥️",
+    "Tablet": "📟",
+    "Printer": "🖨️",
+    "Console": "🎮",
+    "other": "⚙️"
+}
+
+
 DEVICE_BRANDS_RU = {
-    "💻 Ноутбук": LAPTOP_BRANDS,
-    "🖥 ПК": PC,
-    # "📱 Телефон": PHONE_BRANDS,
-    "👾 Видеокарта": GPU_BRANDS,
-    "🧩 Материнская плата": MOTHERBOARD_BRANDS,
-    # "🖥️ Монитор": MONITOR_BRANDS,
-    "📟 Планшет": TABLET_BRANDS,
-    # "🖨️ Принтер": PRINTER_BRANDS,
-    "🎮 Игровая консоль": CONSOLE_BRANDS,
+    "Ноутбук": LAPTOP_BRANDS,
+    "ПК": PC,
+    # "Телефон": PHONE_BRANDS,
+    "Видеокарта": GPU_BRANDS,
+    "Материнская плата": MOTHERBOARD_BRANDS,
+    # "Монитор": MONITOR_BRANDS,
+    "Планшет": TABLET_BRANDS,
+    # "Принтер": PRINTER_BRANDS,
+    "Игровая консоль": CONSOLE_BRANDS,
 }
 
 DEVICE_BRANDS_EN = {
-    "💻 Laptop": LAPTOP_BRANDS,
-    "🖥 PC": PC,
-    # "📱 Phone": PHONE_BRANDS,
-    "👾 Gpu": GPU_BRANDS,
-    "🧩 Motherboard": MOTHERBOARD_BRANDS,
-    # "🖥️ Monitor": MONITOR_BRANDS,
-    "📟 Tablet": TABLET_BRANDS,
-    # "🖨️ Printer": PRINTER_BRANDS,
-    "🎮 Console": CONSOLE_BRANDS
+    "Laptop": LAPTOP_BRANDS,
+    "PC": PC,
+    # "Phone": PHONE_BRANDS,
+    "GPU": GPU_BRANDS,
+    "Motherboard": MOTHERBOARD_BRANDS,
+    # "Monitor": MONITOR_BRANDS,
+    "Tablet": TABLET_BRANDS,
+    # "Printer": PRINTER_BRANDS,
+    "Console": CONSOLE_BRANDS
 }
-
-
-ORDER_STATUS_RU = {
-    'new': 'Новый заказ 🟢',
-    'diagnosis': ('🟡 Диагностика', 'идет диагностика'),
-    'waiting_parts': ('🟣 Ожидание запчастей', 'ждем детали'),
-    'repair': ('🟠 В ремонте', 'активный ремонт'),
-    'testing': ('🔵 Тестирование', 'тестирование после ремонта'),
-    'ready': ('🟣 Готов к выдаче', 'ремонт завершен'),
-    'completed': ('✅ Завершен', 'выдан клиенту'),
-    'cancelled': ('❌ Отменен', 'заказ отменен'),
-    'waiting_payment': ('💰 Ожидание оплаты', 'ждем оплаты'),
-    'warranty': ('🛡️ Гарантия', 'гарантийный случай')
-}
-
-statuses_en = {
-    'new': ('🟢 New', 'new order, not started'),
-    'diagnosis': ('🟡 Diagnosis', 'diagnosis in progress'),
-    'waiting_parts': ('🟣 Waiting for parts', 'awaiting components'),
-    'repair': ('🟠 Repair', 'active repair work'),
-    'testing': ('🔵 Testing', 'post-repair testing'),
-    'ready': ('🟣 Ready for pickup', 'repair completed'),
-    'completed': ('✅ Completed', 'collected by customer'),
-    'cancelled': ('❌ Cancelled', 'order cancelled'),
-    'waiting_payment': ('💰 Awaiting payment', 'waiting for payment'),
-    'warranty': ('🛡️ Warranty', 'warranty case')
-}
-
-
 
 
 PREFIXES = {

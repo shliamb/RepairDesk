@@ -20,6 +20,7 @@ def create_tables_in_db():
         create_table_users = '''
         CREATE TABLE IF NOT EXISTS users (
             user_id UUID PRIMARY KEY,                                                           -- UUID value
+
             user_glotmax VARCHAR(50) UNIQUE,                                                    -- MAX ебать его в рот..
             user_whatsapp VARCHAR(50) UNIQUE,                                                   -- WatsApp земля ему пухом..
             user_telegram BIGINT UNIQUE,                                                        -- Telegram id
@@ -27,6 +28,8 @@ def create_tables_in_db():
             phone VARCHAR(20) UNIQUE,
             email VARCHAR(100) UNIQUE,
             name VARCHAR(50),
+
+            a_tip DECIMAL(10, 2),                                                               -- Чаевые от клиента сумма за все время
             real_name VARCHAR(50),                                                              -- Админ добавляет менеджеров и устанавливаем им реальные имена для доков
             description_user VARCHAR(200),                                                      -- Описание пользователя, для внутреннего использования
             source VARCHAR(200),                                                                -- Источник рекламы
@@ -34,12 +37,15 @@ def create_tables_in_db():
             hum_quality VARCHAR(50),                                                            -- Бывает полезно, когда повторные обращения - экономит время и нервы   
             last_visit TIMESTAMP,                                                               -- Последнее посещение
             time_reg TIMESTAMP,                                                                 -- Время регистрации
-            time_zone VARCHAR(10), 
-            language VARCHAR(10),
+            time_zone VARCHAR(10),                                                              -- Не используется
+            language VARCHAR(10),                                                               -- Не используется
             parametrs JSONB,                                                                    -- На будующее, пока хз
-            admin BOOLEAN DEFAULT FALSE,
-            manager BOOLEAN DEFAULT FALSE,
-            master BOOLEAN DEFAULT FALSE,
+
+            admin BOOLEAN DEFAULT FALSE,                                                        -- Определение прав
+            manager BOOLEAN DEFAULT FALSE,                                                      -- Определение прав
+            master BOOLEAN DEFAULT FALSE,                                                       -- Определение прав
+            user BOOLEAN DEFAULT FALSE,                                                         -- Определение прав
+
             remind JSONB                                                                        -- Напоминалка, позже можно замутить..
         );
         '''
@@ -64,9 +70,14 @@ def create_tables_in_db():
             created_date TIMESTAMP,                                                             -- Дата приема устройства
             completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
             diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
-            cost_repair DECIMAL(10, 2),                                                         -- Стоимость ремонта
-            cost_of_parts DECIMAL(10, 2),  
+            services JSONB,                                                                     -- Услуга - цена - гарантия
+            cost_repair DECIMAL(10, 2),                                                         -- Общая стоимость ремонта
+            net_profit DECIMAL(10, 2),                                                          -- Чистая прибыль с заказа
+            parts JSONB,                                                                        -- Комплектующие - цена - гарантия
+            cost_of_parts DECIMAL(10, 2),                                                       -- Общая стоимость запчастей
             cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
+            prepayment DECIMAL(10, 2),                                                          -- Предоплата клиента
+            tips DECIMAL(10, 2),                                                                -- Чаевые клиента
             guarantee VARCHAR(100),                                                             -- Гарантия (пока не придумал.. позже)
             path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства
             client_id UUID NOT NULL,                                                            -- user_id клиента заказа в UUID

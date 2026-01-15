@@ -3,6 +3,8 @@ from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
 from database.users import add_user, get_user_by_tg, get_user_by_user_id
+from utils.formatters import parse_cost, add_days_from_text
+from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -10,13 +12,13 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
 from config import get_brands, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
 from keyboards.workshop import build_keyboard
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
 import re
 # from common import day_utcnow
 from database import db
 from database.orders import OrderService
 from pdf.gen_pdf import BuildPDF
-from decimal import Decimal
+# from decimal import Decimal
 import uuid
 import json
 
@@ -33,19 +35,6 @@ pdf = BuildPDF()
 
 """
 
-def parse_cost(cost_text: str) -> Decimal:
-    """Из '1000 RUB' → Decimal(1000.00)"""
-    digits = ''.join(ch for ch in cost_text if ch.isdigit() or ch == '.')
-    return Decimal(digits) if digits else Decimal('0')
-
-
-def add_days_from_text(text: str) -> datetime:
-    """Извлекает число дней из текста диагностики, возвращает дату ~ диагностики """
-    date = datetime.now()
-    days = int(re.search(r'\d+', text).group()) if re.search(r'\d+', text) else 0
-    new_date = date + timedelta(days=days) if days > 0 else date
-    day_str = new_date.strftime("%Y-%m-%d %H:%M:%S")
-    return datetime.strptime(day_str, '%Y-%m-%d %H:%M:%S')
 
 
 class newOrder(StatesGroup):
@@ -125,6 +114,9 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
         if lang == "ru": await message.answer("🚫 Извините, возникла ошибка.", reply_markup=ReplyKeyboardRemove())
         else: await message.answer("🚫 Sorry, there was an error.", reply_markup=ReplyKeyboardRemove())
         return
+    
+    if lang == "ru": await message.answer(f"🎉 Новый заказ {order_number} сохранён в базу.", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer(f"🎉 The new order {order_number} has been saved to the database.", reply_markup=ReplyKeyboardRemove())
 
     data["order_number"] = order_number
     # После сохранения, так как будет мешать
@@ -133,6 +125,11 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
 
     # Build PDF file
     path_pdf = pdf.get_order_pdf(data)
+    if not order_number:
+        # logging...
+        if lang == "ru": await message.answer("🚫 При генерации PDF возникла проблема, извините. Попробуйте получить PDF документ снова, войдя в заказ.", reply_markup=ReplyKeyboardRemove())
+        else: await message.answer("🚫 There was a problem when generating the PDF, sorry. Try to get the PDF document again by logging in to the order.", reply_markup=ReplyKeyboardRemove())
+        return
 
     # SEND PDF FILE
     send_text = "📄 Квитанция о приеме" if lang == "ru" else "📄 Admission receipt"
@@ -141,8 +138,6 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
         caption=send_text
     )
 
-    if lang == "ru": await message.answer("👍 Заказ принят", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("👍 The order is accepted", reply_markup=ReplyKeyboardRemove())
 
 
 
