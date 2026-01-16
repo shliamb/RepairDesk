@@ -8,6 +8,6 @@ async def typing(action):
 async def is_manager(user_id):
     """ Проверка прав для входа в workshop """
     user = await get_user_by_tg(user_id)
-    if user.get("admin") or user.get("manager"):
+    if user.get("is_admin") or user.get("is_manager"):
         return True
     return False

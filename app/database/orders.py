@@ -112,6 +112,75 @@ class OrderService:
 
 
 
+    async def edit_order(self, order_data: dict) -> bool:
+        """Обновить данные заказа (id должен быть в order_data)"""
+        
+        if 'id' not in order_data:
+            logger.error("No id in order_data")
+            return False
+        
+        order_id = order_data.pop('id')  # вынимаем id
+        if not order_data:  # если кроме id ничего нет
+            return False
+        
+        # Формируем SET
+        set_parts = [f"{key} = ${i+1}" for i, key in enumerate(order_data.keys())]
+        values = list(order_data.values())
+        values.append(order_id)  # id для WHERE в конце
+        
+        query = f"""
+            UPDATE orders 
+            SET {', '.join(set_parts)}
+            WHERE id = ${len(values)}
+        """
+        
+        try:
+            await self.db.execute(query, *values)
+            return True
+        except Exception as e:
+            logger.error(f"Error updating order {order_id}: {e}")
+            return False
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # async def edit_order(self, order_id: int, order_data: dict) -> bool:
+    #     """Обновить данные заказа по ID"""
+        
+    #     if not order_data:
+    #         return False
+        
+    #     set_parts = []
+    #     values = []
+        
+    #     for i, (key, value) in enumerate(order_data.items(), 1):
+    #         set_parts.append(f"{key} = ${i}")
+    #         values.append(value)
+        
+    #     values.append(order_id)
+    #     where_index = len(values)  # номер плейсхолдера для WHERE
+        
+    #     query = f"""
+    #         UPDATE orders 
+    #         SET {', '.join(set_parts)}
+    #         WHERE id = ${where_index}
+    #     """
+        
+    #     try:
+    #         await self.db.execute(query, *values)
+    #         return True
+    #     except Exception as e:
+    #         logger.error(f"Error updating order {order_id}: {e}")
+    #         return False
 
 
 

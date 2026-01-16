@@ -25,32 +25,41 @@ PATH_LOGS = "/logs" if DOCKER else "logs"
 
 ################ NEW ORDER CONST #####################
 
-STATUS_ORDER = ["new", "in_progress", "diagnostics", "waiting_parts", 
-                "ready", "completed", "canceled", "rejected", "postponed"]
+# STATUS_ORDER = ["new", "diagnosis", "repair", "waiting_parts", "testing" 
+#                 "ready", "completed", "canceled", "rejected", "postponed"]
 
 ORDER_STATUS_RU = {
     'new': 'Новый',
     'diagnosis': 'Диагностика',
     'repair': 'В ремонте',
-    'testing': 'Тестирование',
-    'ready': 'Готов к выдаче',
-    'completed': 'Завершен',
-    'cancelled': 'Отменен',
+    'waiting_parts': 'Ожидающие запчасти',
+    'waiting_decision': 'Ожидание решения',
+    'testing': 'На тестах',
+    'ready': 'Готов',
+    'issued': 'Выдан',
+    'issued_not_paid': 'Выдан, но не оплачен',
+    'paid_not_issued': 'Оплачен но не выдан',
+    'cancelled': 'Отказ от ремонта',
+    'unsuccessful_repair': 'Неудачный ремонт'
 }
 
-
-ORDER_STATUS_EN = {
+ORDER_STATUS = {
     'new': 'New',
-    'diagnosis': 'Diagnosis',
+    'diagnosis': 'Diagnostics',
     'repair': 'In repair',
+    'waiting_parts': 'Pending parts',
+    'waiting_decision': 'Waiting a decision',
     'testing': 'Testing',
-    'ready': 'Ready for pickup',
-    'completed': 'Completed',
-    'cancelled': 'Cancelled',
+    'ready': 'Ready',
+    'issued': 'Issued',
+    'issued_not_paid': 'Issued, not paid',
+    'paid_not_issued': 'Paid, not issued',
+    'cancelled': 'Refusal to repair',
+    'unsuccessful_repair': 'Unsuccessful repair'
 }
 
 # Активные = все кроме ready, completed, canceled, rejected
-ACTIVE_STATUSES = ["new", "in_progress", "diagnostics", "waiting_parts", "postponed"]
+ACTIVE_STATUSES = ["new", "diagnosis", "repair", "waiting_parts", "waiting_decision", "testing", "ready", "issued_not_paid"]
 IN_PROGRESS_STATUSES = ["in_progress", "diagnostics", "waiting_parts"]
 READY_STATUSES = ["ready"]
 COMPLETED_STATUSES = ["completed"]
@@ -64,14 +73,20 @@ ALL_20 = []
 # POSTPONED_STATUSES = ["postponed"]
 # CANCELED_STATUSES = ["canceled", "rejected"]
 
+
 ORDER_STATUS_COLOR = {
     'new': '🟢',
     'diagnosis': '🟡',
     'repair': '🟠',
+    'waiting_parts': '⏳',
+    'waiting_decision': '🤔',
     'testing': '🔵',
     'ready': '🟣',
-    'completed': '✅',
+    'issued': '📤',
+    'issued_not_paid': '💸',
+    'paid_not_issued': '💰',
     'cancelled': '❌',
+    'unsuccessful_repair': '🚫'
 }
 
 PROBLEMS = {"ru": ["Не включается", "Не заряжается", "Нет изображения", "Греется", "Шумит", "Тормозит", "Зависает"], "en": ["Won't turn on", "Won't charge", "No image", "Heats up", "Makes noise", "Slows down", "Freezes"]}
@@ -99,6 +114,9 @@ TABLET_BRANDS = ["Apple", "Samsung", "Lenovo", "Huawei", "Xiaomi", "Asus", "Micr
 PRINTER_BRANDS = ["HP", "Canon", "Epson", "Brother", "Xerox", "Kyocera", "Ricoh", "Samsung", "Pantum", "Lexmark"]
 CONSOLE_BRANDS = ["Sony", "Microsoft", "Nintendo", "Sega", "Atari"]
 PC = ["PC"]
+
+EDIT_ORDER = {"stat_ru": "📊 Статус", "stat_en": "📊 Status", "dia_ru": "🔍 Диагностика", "dia_en": "🔍 Diagnostics", "add_serv_ru": "➕ Услуга", "add_serv_en": "➕ Service", "add_part_ru": "➕ Запчасть", "add_part_en": "➕ Part", "clear_ru": "🗑️ Очистить", "clear_en": "🗑️ Clear"}
+
 
 DEVICE_ICO = {
 
