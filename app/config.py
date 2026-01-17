@@ -115,7 +115,7 @@ PRINTER_BRANDS = ["HP", "Canon", "Epson", "Brother", "Xerox", "Kyocera", "Ricoh"
 CONSOLE_BRANDS = ["Sony", "Microsoft", "Nintendo", "Sega", "Atari"]
 PC = ["PC"]
 
-EDIT_ORDER = {"stat_ru": "📊 Статус", "stat_en": "📊 Status", "dia_ru": "🔍 Диагностика", "dia_en": "🔍 Diagnostics", "add_serv_ru": "➕ Услуга", "add_serv_en": "➕ Service", "add_part_ru": "➕ Запчасть", "add_part_en": "➕ Part", "clear_ru": "🗑️ Очистить", "clear_en": "🗑️ Clear"}
+EDIT_ORDER = {"stat_ru": "📊 Статус", "stat": "📊 Status", "dia_ru": "🔍 Диагностика", "dia": "🔍 Diagnostics", "add_serv_ru": "➕ Услуга", "add_serv": "➕ Service", "add_part_ru": "➕ Запчасть", "add_part": "➕ Part", "clear_ru": "🗑️ Очистить", "clear": "🗑️ Clear", "notes_ru": "💬 Комментарии", "notes": "💬 Comments"}
 
 
 DEVICE_ICO = {

@@ -4,6 +4,7 @@ from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from utils.formatters import remove_emojis, format_phone, format_date_nice
 from database.users import get_user_by_user_id, get_user_by_tg
+from utils.serialize import json_serializer, datetime_parser
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
@@ -29,6 +30,7 @@ class Edit(StatesGroup):
     order = State()
     status = State()
     diagnos = State()
+    notes = State()
 
 
 
@@ -105,14 +107,40 @@ async def edit_diagnos(message: types.Message, state: FSMContext):
     await edit_order_db(lang, data, state, message)
 
 
-#
-@router.message(Edit.order)
-async def choose_edit_order(message: types.Message, state: FSMContext):
-    """"""
+# NOTES / COMMENTS ORDER
+@router.message(Edit.notes)
+async def add_note(message: types.Message, state: FSMContext):
+    """ Добавление заметки / комментария к заказу"""
     await typing(message)
     lang = message.from_user.language_code
 
-    if message.text in (EDIT_ORDER["stat_ru"], EDIT_ORDER["stat_en"]):
+    if not message.text:
+        if lang == "ru": await message.answer("🚫 Наберите текст комментария")
+        else: await message.answer("🚫 Type the comment text")
+        return
+
+    state_data = await state.get_data()
+    id = state_data.get("id")
+    data_order = await order.get_order_id(id)
+    comments = data_order.get("comments", []) or []
+    if comments: comments = json.loads(comments).copy()
+    comments.append({"note": message.text, "date": datetime.now()})
+    data = {
+        "id": state_data.get("id"),
+        "comments": json.dumps(comments, default=json_serializer, ensure_ascii=False)
+    }
+    await edit_order_db(lang, data, state, message)
+
+
+# PUSH BUTTONS EDITION ORDER
+@router.message(Edit.order)
+async def choose_edit_order(message: types.Message, state: FSMContext):
+    """ PUSH BUTTONS EDITION ORDER """
+    await typing(message)
+    lang = message.from_user.language_code
+
+    # CHANGE STATUS ORDER
+    if message.text in (EDIT_ORDER["stat_ru"], EDIT_ORDER["stat"]):
         if lang == "ru":
             buttons = list(ORDER_STATUS_RU.values())
             buttons.append(CANCEL["ru"])
@@ -125,7 +153,8 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
         await message.answer(message_text, reply_markup = build_keyboard(buttons))
         await state.set_state(Edit.status)
 
-    elif message.text in (EDIT_ORDER["dia_ru"], EDIT_ORDER["dia_en"]):
+    # WRITE DIAGNOSTIC
+    elif message.text in (EDIT_ORDER["dia_ru"], EDIT_ORDER["dia"]):
         buttons = []
         if lang == "ru":
             buttons.append(CANCEL["ru"])
@@ -136,6 +165,46 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
 
         await message.answer(message_text, reply_markup = build_keyboard(buttons))
         await state.set_state(Edit.diagnos)
+
+    # ADD COMMENTS
+    elif message.text in (EDIT_ORDER["notes_ru"], EDIT_ORDER["notes"]):
+        buttons = []
+        if lang == "ru":
+            buttons.append(CANCEL["ru"])
+            message_text = "💬 Напишите комментарий к заказу:"
+        else:
+            buttons.append(CANCEL["en"])
+            message_text = "💬 Write a comment on the order:"
+
+        await message.answer(message_text, reply_markup = build_keyboard(buttons))
+        await state.set_state(Edit.notes)
+
+    # CLEAR PARTS AND WORK
+    elif message.text in (EDIT_ORDER["clear_ru"], EDIT_ORDER["clear"]):
+        
+        state_data = await state.get_data()
+        data = {
+            "id": state_data.get("id"),
+            "diagnosis": message.text
+        }
+        await edit_order_db(lang, data, state, message)
+
+
+        # buttons = []
+        # if lang == "ru":
+        #     buttons.append(CANCEL["ru"])
+        #     message_text = "💬 Напишите комментарий к заказу:"
+        # else:
+        #     buttons.append(CANCEL["en"])
+        #     message_text = "💬 Write a comment on the order:"
+
+        # await message.answer(message_text, reply_markup = build_keyboard(buttons))
+        # await state.set_state(Edit.notes)
+
+
+        #EDIT_ORDER["clear_ru"]
+
+        
 
 
         # state_data = await state.get_data()
@@ -195,6 +264,7 @@ def format_order_card(lang, **kwargs):
             'services': '🛠️ УСЛУГИ',
             'parts': '🔩 ЗАПЧАСТИ',
             'total': '💰 ИТОГО',
+            'comments': '💬 Комментарии',
 
 
             'equipment': 'Комплектация',
@@ -225,6 +295,7 @@ def format_order_card(lang, **kwargs):
             'services': '🛠️ SERVICES',
             'parts': '🔩 PARTS',
             'total': '💰 TOTAL',
+            'comments': '💬 Comments',
 
             'equipment': 'Equipment',
             'appearance': 'Appearance',
@@ -237,64 +308,104 @@ def format_order_card(lang, **kwargs):
             'tips': 'Tips'
         }
     
-    # Форматируем телефон
-    formatted_phone = format_phone(kwargs.get('client_phone', ''))
 
 
-    master = kwargs.get('real_name_master') or ""
-    if master:
-        master = (
-            f"<b>{texts['master']}:</b>\n"
-            f"        {master or texts['empty'] }\n"
-            f"        {kwargs.get('master_telegram') or texts['empty'] }\n\n"
-            #f"        Комментарии: В пятницу доделаю, не давите бля!\n\n" # коммент от мастера
-        )
 
-    
-    order_card = (
 
-        f"<b>{texts['order']} {kwargs.get('order_number')}:</b>\n\n"
 
+    # Сбор визуализации вывода заказа
+    order_card = ""
+    # Заказ номер:
+    order_card += (
+        f"<b>{texts['order']} {kwargs.get('order_number')}:</b>\n"
+        "\n"
+    )
+    # Статус заказа, платный/гарантийный
+    order_card += (
         f"<b>{order_status_color.get(kwargs.get('status'), '')} {texts['status']}:</b>\n"
         f"        {texts['paid'] if kwargs.get('order_type') == 'paid' else texts['warranty']}\n"
-        f"        {status_dict.get(kwargs.get('status'), '')}\n\n"
-        
+        f"        {status_dict.get(kwargs.get('status'), '')}\n"
+        "\n"
+    )
+    # Инфа о клиенте:
+    order_card += (
         f"<b>{texts['client']}:</b>\n"
-        f"        {kwargs.get('real_name_client', '')}\n"
-        f"        {formatted_phone or texts['empty']}\n"
-        f"        {kwargs.get('client_telegram') or texts['empty'] }\n"
-        f"        {texts['tips']}: {kwargs.get('a_tip')}{CURRENCY}\n\n"
-        
-        f"<b>{device_ico.get(kwargs.get('device_type', ''), '')} {texts['device']}:</b>\n"
-        f"        {kwargs.get('device_type') or texts['empty']}\n"
-        f"        {kwargs.get('device_brand', '')} • {kwargs.get('device_model', '')}\n"
-        f"        SN/IMEI: {kwargs.get('sn_imei', '') or texts['empty']}\n"
-        f"        {texts['equipment']}: {kwargs.get('equipment', '') or texts['empty']}\n"
-        f"        {texts['appearance']}: {kwargs.get('appearance', '') or texts['empty']}\n\n"
+        f"        {kwargs.get('real_name_client')}\n"
+    )
+    if kwargs.get('client_phone'):
+        formatted_phone = format_phone(kwargs.get('client_phone'))
+        order_card += f"        {formatted_phone or texts['empty']}\n"
 
-        
+    if kwargs.get('client_telegram'): order_card += f"        {kwargs.get('client_telegram')}\n"
+    if kwargs.get('a_tip'): order_card += f"        {texts['tips']}: {kwargs.get('a_tip')}{CURRENCY}\n"
+    order_card += "\n"
+
+    # Инфа о устройстве:
+    order_card += (
+        f"<b>{device_ico.get(kwargs.get('device_type', ''))} {texts['device']}:</b>\n"
+        f"        {kwargs.get('device_type') or texts['empty']}\n"
+    )
+    if kwargs.get('device_brand'): order_card += f"        {kwargs.get('device_brand')}"
+    if kwargs.get('device_model'): order_card += f" • {kwargs.get('device_model')}"
+    order_card += "\n"
+    if kwargs.get('sn_imei'): order_card += f"        SN/IMEI: {kwargs.get('sn_imei')}\n"
+    if kwargs.get('equipment'): order_card += f"        {texts['equipment']}: {kwargs.get('equipment')}\n"
+    if kwargs.get('appearance'): order_card += f"        {texts['appearance']}: {kwargs.get('appearance')}\n"
+    order_card += "\n"
+
+    # Кто принял устройство:
+    order_card += (
         f"<b>{texts['accepted']}:</b>\n"
         f"        {texts['by']} {kwargs.get('real_name_created')}\n"
-        f"        {kwargs.get('created_date') or texts['empty'] }\n"
-        f"        {kwargs.get('created_telegram') or texts['empty'] }\n\n"
-        #f"        Комментарии: Очень спешил.\n\n"
+        f"        {kwargs.get('created_date')}\n"
+    )
+    if kwargs.get('created_telegram'): order_card += f"        {kwargs.get('created_telegram')}\n"
+    #f"        Комментарии: Очень спешил.\n\n"
+    order_card += "\n"
 
-        f"{master}"
-        # f"<b>{texts['master']}:</b>\n"
-        # f"        {kwargs.get('real_name_master') or texts['empty'] }\n"
-        # f"        {kwargs.get('master_telegram') or texts['empty'] }\n\n"
-        # #f"        Комментарии: В пятницу доделаю, не давите бля!\n\n" # коммент от мастера
-        
+    # Кто из мастеров взял заказ:
+    if kwargs.get('real_name_master'):
+        order_card += (
+            f"<b>{texts['master']}:</b>\n"
+            f"        {kwargs.get('real_name_master')}\n"
+        )
+        if kwargs.get('master_telegram'): order_card += f"        {kwargs.get('master_telegram')}\n"
+        #f"        Комментарии: В пятницу доделаю, не давите бля!\n\n" # коммент от мастера
+        order_card += "\n"
+
+    # Диагностика до и цена
+    order_card += (
         f"<b>{texts['diagnosis']}:</b>\n"
-        f"        {texts['until']} {kwargs.get('diagnosis_before', '')}\n"
-        f"        {kwargs.get('cost_diagnostics', 0)} {CURRENCY}\n\n"
-        
+        f"        {texts['until']} {kwargs.get('diagnosis_before')}\n"
+        f"        {kwargs.get('cost_diagnostics', 0)} {CURRENCY}\n"
+    )
+    order_card += "\n"
+
+    # Описание проблемы устройства:
+    order_card += (
         f"<b>{texts['problem']}:</b>\n"
-        f"        {kwargs.get('problem', '')}\n\n"
+        f"        {kwargs.get('problem')}\n"
+    )
+    order_card += "\n"
 
-        f"<b>{texts['diagnostic_result']}:</b>\n"
-        f"        {kwargs.get('diagnosis') or texts['empty']}\n\n"
+    # Комментарии по пунктам..
+    comments = kwargs.get('comments')
+    if comments:
+        order_card += f"<b>{texts['comments']}:</b>\n"
+        for one in comments:
+            order_card += f"        <b>• {format_date_nice(one.get('date'), lang)}</b>: {one.get('note')}\n"
+        order_card += "\n"
 
+    # Результат диагностики:
+    if kwargs.get('diagnosis'):
+        order_card += (
+            f"<b>{texts['diagnostic_result']}:</b>\n"
+            f"        {kwargs.get('diagnosis') or texts['empty']}\n"
+        )
+        order_card += "\n"
+
+    # Работы / Цены / Гарантии
+    order_card += (
         f"<b>{texts['services']}:</b>\n"
         f"        1. Замена экрана  x1  2000{CURRENCY}  0\n\n"
 
@@ -306,11 +417,6 @@ def format_order_card(lang, **kwargs):
         f"<b>{texts['total']}:</b>\n"
         f"        <b>5500{CURRENCY}</b>\n\n"
     )
-    
-    # Добавляем примечание, если есть
-    if kwargs.get('notes'):
-        note_text = '📝 Примечание' if lang == 'ru' else '📝 Notes'
-        order_card += f"\n<b>{note_text}:</b>\n        {kwargs.get('notes')}\n"
     
     return order_card
 
@@ -334,31 +440,32 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
 
     id = data_order.get("id")
     order_number = data_order.get("order_number")
-    location = data_order.get("location")
-    sn_imei = data_order.get("sn_imei")
-    status = data_order.get("status")
-    order_type = data_order.get("order_type")
-    device_type = data_order.get("device_type")
-    device_brand = data_order.get("device_brand")
-    device_model = data_order.get("device_model")
-    # equipment = data_order.get("equipment")
-    # problem = data_order.get("problem")
-    # appearance = data_order.get("appearance")
-    created_date = data_order.get("created_date")
-    diagnosis_before = data_order.get("diagnosis_before")
-    cost_repair = data_order.get("cost_repair")
-    cost_of_parts = data_order.get("cost_of_parts")
-    cost_diagnostics = int(data_order.get("cost_diagnostics"))
-    guarantee = data_order.get("guarantee")
-    path_photo = data_order.get("guarantee")
-    # client_id = data_order.get("client_id")
-    # created_by = data_order.get("created_by") # telegram id !!
-    # real_name_created = data_order.get("real_name_created")
-    # master = data_order.get("master")
-    edit_history = data_order.get("edit_history")
-    comments = data_order.get("comments")
-    completed_works = data_order.get("completed_works")
-    diagnosis = data_order.get("diagnosis")
+    # location = data_order.get("location")
+    # sn_imei = data_order.get("sn_imei")
+    # status = data_order.get("status")
+    # order_type = data_order.get("order_type")
+    # device_type = data_order.get("device_type")
+    # device_brand = data_order.get("device_brand")
+    # device_model = data_order.get("device_model")
+    # # equipment = data_order.get("equipment")
+    # # problem = data_order.get("problem")
+    # # appearance = data_order.get("appearance")
+    # created_date = data_order.get("created_date")
+    # diagnosis_before = data_order.get("diagnosis_before")
+    # cost_repair = data_order.get("cost_repair")
+    # cost_of_parts = data_order.get("cost_of_parts")
+    # cost_diagnostics = int(data_order.get("cost_diagnostics"))
+    # guarantee = data_order.get("guarantee")
+    # path_photo = data_order.get("guarantee")
+    # # client_id = data_order.get("client_id")
+    # # created_by = data_order.get("created_by") # telegram id !!
+    # # real_name_created = data_order.get("real_name_created")
+    # # master = data_order.get("master")
+    # edit_history = data_order.get("edit_history")
+    # # comments = data_order.get("comments")
+    # completed_works = data_order.get("completed_works")
+    # diagnosis = data_order.get("diagnosis")
+    # #a_tip = data_order.get("a_tip")
 
 
     problem = data_order.get("problem")
@@ -379,7 +486,6 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     client_telegram = data_client.get("username_telegram")
     client_name = data_client.get("real_name") or data_client.get("name")
     client_phone = data_client.get("phone")
-    a_tip = data_client.get("a_tip") or "0"
 
     # GET DATA MANAGER:
     created_by_telegram_id = data_order.get("created_by") # telegram id !!
@@ -395,8 +501,9 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     master_telegram = data_master.get("username_telegram")
     if master_telegram: master_telegram = "@" + master_telegram
 
-
-
+    # COMMENTS:
+    comments = data_order.get("comments", []) or []
+    if comments: comments = json.loads(comments, object_hook=datetime_parser).copy() # из str -> в Json
 
     order_data = {
         'order_number': data_order.get("order_number"),
@@ -417,10 +524,10 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
         'diagnosis_before': format_date_nice(data_order.get("diagnosis_before"), lang),
         'cost_diagnostics': int(data_order.get("cost_diagnostics")),
         'problem': problem,
-        'comments': data_order.get("comments"),
+        'comments': comments,
         'master': data_order.get("master"),
         'diagnosis': data_order.get("diagnosis"),
-        'a_tip': a_tip,
+        'a_tip': data_order.get("a_tip"),
         'real_name_master': real_name_master,
         'master_telegram': master_telegram
     }
@@ -429,10 +536,10 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     if lang == "ru":
         message_text = "Выберите то, что хотите изменить:"
 
-        buttons = [EDIT_ORDER["stat_ru"], EDIT_ORDER["dia_ru"], EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_part_ru"], EDIT_ORDER["clear_ru"], CANCEL["ru"]]
+        buttons = [EDIT_ORDER["stat_ru"], EDIT_ORDER["dia_ru"], EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_part_ru"], EDIT_ORDER["notes_ru"], EDIT_ORDER["clear_ru"], CANCEL["ru"]]
     else:
         message_text = "Select what you want to change:"
-        buttons = [EDIT_ORDER["stat_en"], EDIT_ORDER["dia_en"], EDIT_ORDER["add_serv_en"], EDIT_ORDER["add_part_en"], EDIT_ORDER["clear_en"], CANCEL["ru"]]
+        buttons = [EDIT_ORDER["stat"], EDIT_ORDER["dia"], EDIT_ORDER["add_serv"], EDIT_ORDER["add_part"], EDIT_ORDER["notes"], EDIT_ORDER["clear"], CANCEL["en"]]
     await message.answer(message_text, reply_markup = build_keyboard(buttons))
 
     await state.update_data(id=id, order_number=order_number)

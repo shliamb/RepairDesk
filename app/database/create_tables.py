@@ -29,7 +29,7 @@ def create_tables_in_db():
             email VARCHAR(100) UNIQUE,
             name VARCHAR(50),
 
-            a_tip DECIMAL(10, 2) DEFAULT 0,00,                                                               -- Чаевые от клиента сумма за все время
+            a_tip DECIMAL(10, 2),                                                               -- Чаевые от клиента сумма за все время
             real_name VARCHAR(50),                                                              -- Админ добавляет менеджеров и устанавливаем им реальные имена для доков
             description_user VARCHAR(200),                                                      -- Описание пользователя, для внутреннего использования
             source VARCHAR(200),                                                                -- Источник рекламы
