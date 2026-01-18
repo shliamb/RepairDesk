@@ -35,7 +35,7 @@ async def get_user_by_tg(tg_id: int) -> dict:
     return {}
 
 async def get_user_by_user_id(user_id: uuid) -> dict:
-    """Найти пользователя по Telegram ID"""
+    """Найти пользователя по UUID ID"""
     query = "SELECT * FROM users WHERE user_id = $1"
     record = await db.fetchrow(query, user_id)
     if record:

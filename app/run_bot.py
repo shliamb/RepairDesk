@@ -23,7 +23,6 @@ from database.create_tables import create_tables_in_db
 
 
 
-
 bot = Bot(TELEGRAM_BOT_TOKEN, parse_mode="markdown")
 dp = Dispatcher()
 

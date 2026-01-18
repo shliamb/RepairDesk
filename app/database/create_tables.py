@@ -70,15 +70,14 @@ def create_tables_in_db():
             created_date TIMESTAMP,                                                             -- Дата приема устройства
             completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
             diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
-            services JSONB,                                                                     -- Услуга - цена - гарантия
+            services TEXT,                                                                     -- Услуга - цена - гарантия
             cost_repair DECIMAL(10, 2),                                                         -- Общая стоимость ремонта
-            net_profit DECIMAL(10, 2),                                                          -- Чистая прибыль с заказа
-            parts JSONB,                                                                        -- Запчасти - цена - гарантия
+            parts TEXT,                                                                        -- Запчасти - цена - гарантия
             cost_of_parts DECIMAL(10, 2),                                                       -- Общая стоимость запчастей
             cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
-            prepayment DECIMAL(10, 2),                                                          -- Предоплата клиента
+            prepayment TEXT,                                                          -- Предоплата клиента
+            net_profit DECIMAL(10, 2),                                                          -- Чистая прибыль с заказа
             tips DECIMAL(10, 2),                                                                -- Чаевые клиента
-            guarantee VARCHAR(100),                                                             -- Гарантия (пока не придумал.. позже)
             path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства
             client_id UUID NOT NULL,                                                            -- user_id клиента заказа в UUID
             real_name_client VARCHAR(50),                                                       -- Реальное имя клиента для документов (для уменьшения обращений к базе)
@@ -87,7 +86,7 @@ def create_tables_in_db():
             master UUID,                                                                        -- user_id мастера в UUID                                                
             edit_history JSONB,                                                                 -- Позже можно цепочку изменнений вносить, кто и когда менял
             comments TEXT,                                                                      -- Комментарии по ремонту
-            completed_works JSONB,                                                              -- Выполненные работы в JSON
+            completed_works JSONB,                                                              -- Выполненные работы в JSON ?!
             FOREIGN KEY (client_id) REFERENCES users(user_id)
         );
             CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);

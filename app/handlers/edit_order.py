@@ -122,9 +122,16 @@ async def add_note(message: types.Message, state: FSMContext):
     state_data = await state.get_data()
     id = state_data.get("id")
     data_order = await order.get_order_id(id)
+
+    id_user = message.from_user.id
+    data_user = await get_user_by_tg(id_user) # real_name  name
+    user_telegram_name = data_user.get("username_telegram")
+
     comments = data_order.get("comments", []) or []
     if comments: comments = json.loads(comments).copy()
-    comments.append({"note": message.text, "date": datetime.now()})
+
+
+    comments.append({"note": message.text, "date": datetime.now(), "user_name_telegram": user_telegram_name})
     data = {
         "id": state_data.get("id"),
         "comments": json.dumps(comments, default=json_serializer, ensure_ascii=False)
@@ -185,51 +192,22 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
         state_data = await state.get_data()
         data = {
             "id": state_data.get("id"),
-            "diagnosis": message.text
+            "services": "[]",
+            "parts": "[]",
+            "prepayment": "[]",
+            "net_profit": None,
+            "cost_repair": None,
+            "cost_of_parts": None,
+            # "cost_diagnostics": None
         }
         await edit_order_db(lang, data, state, message)
 
 
-        # buttons = []
-        # if lang == "ru":
-        #     buttons.append(CANCEL["ru"])
-        #     message_text = "💬 Напишите комментарий к заказу:"
-        # else:
-        #     buttons.append(CANCEL["en"])
-        #     message_text = "💬 Write a comment on the order:"
 
-        # await message.answer(message_text, reply_markup = build_keyboard(buttons))
-        # await state.set_state(Edit.notes)
+# EDIT_ORDER["prepayment_ru"]
 
-
-        #EDIT_ORDER["clear_ru"]
-
+    # ...
         
-
-
-        # state_data = await state.get_data()
-        # problem = state_data.get("problem", []).copy()
-        # if message.text in problem:
-        #     if lang == "ru": await message.answer("🚫 Вы уже добавили этот элемент")
-        #     else: await message.answer("🚫 You have already added this element")
-        #     return
-        # problem.append(message.text)
-        # await state.update_data(problem=problem)
-        # return
-
-    # elif message.text in (OWN_VERSION["ru"], OWN_VERSION["en"]):
-    #     if lang == "ru": await message.answer("📝 Опишите заявленные проблемы/неисправности:")
-    #     else: await message.answer("📝 Describe the stated problems/malfunctions:")
-    #     await state.set_state(newOrder.other_problem)
-    #     return
-
-    # elif message.text in (DONE["ru"], DONE["en"]):
-    #     state_data = await state.get_data()
-    #     if not state_data.get("problem"):
-    #         if lang == "ru": await message.answer("🚫 Выберите или опишите проблему, без этого будет трудно чинить:")
-    #         else: await message.answer("🚫 Select or describe the problem, otherwise it will be difficult to fix:")
-    #         return
-    #     flag = True
 
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
@@ -263,8 +241,10 @@ def format_order_card(lang, **kwargs):
             'problem': '⚠️ ПРОБЛЕМА',
             'services': '🛠️ УСЛУГИ',
             'parts': '🔩 ЗАПЧАСТИ',
+            'prepayment': '💵 Предоплата',
             'total': '💰 ИТОГО',
             'comments': '💬 Комментарии',
+            'month': 'месяц',
 
 
             'equipment': 'Комплектация',
@@ -294,8 +274,10 @@ def format_order_card(lang, **kwargs):
             'problem': '⚠️ PROBLEM',
             'services': '🛠️ SERVICES',
             'parts': '🔩 PARTS',
+            'prepayment': '💵 Prepayment',
             'total': '💰 TOTAL',
             'comments': '💬 Comments',
+            'month': 'month',
 
             'equipment': 'Equipment',
             'appearance': 'Appearance',
@@ -393,34 +375,70 @@ def format_order_card(lang, **kwargs):
     if comments:
         order_card += f"<b>{texts['comments']}:</b>\n"
         for one in comments:
-            order_card += f"        <b>• {format_date_nice(one.get('date'), lang)}</b>: {one.get('note')}\n"
+            order_card += f"        <b>• {one.get('user_name_telegram')} {format_date_nice(one.get('date'), lang)}</b>: {one.get('note')}\n"
         order_card += "\n"
 
     # Результат диагностики:
     if kwargs.get('diagnosis'):
         order_card += (
             f"<b>{texts['diagnostic_result']}:</b>\n"
-            f"        {kwargs.get('diagnosis') or texts['empty']}\n"
+            f"        {kwargs.get('diagnosis')}\n"
         )
         order_card += "\n"
 
-    # Работы / Цены / Гарантии
-    order_card += (
-        f"<b>{texts['services']}:</b>\n"
-        f"        1. Замена экрана  x1  2000{CURRENCY}  0\n\n"
+    # 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
+    # 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'warranty_period': '1'}]
+    # 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
 
-        f"<b>{texts['parts']}:</b>\n"
-        f"        1. Экран sn34334  x1  3500{CURRENCY}  3 мес.\n\n"
+    # SERVICES:
+    if kwargs.get('services'):
+        i = 1
+        services = kwargs.get('services')
+        order_card += (
+            f"<b>{texts['services']}:</b>\n"
+        )
+        for one in services:
+            order_card += f"        {i}. {services.get('work')}  x{services.get('pieces')} • {services.get('price')}{CURRENCY} • {services.get('warranty_period')}{texts['month']}\n"
+            i += 1
 
-        f"----------------------------\n"
+        order_card += "\n"
 
-        f"<b>{texts['total']}:</b>\n"
-        f"        <b>5500{CURRENCY}</b>\n\n"
-    )
+    # PARTS:
+    if kwargs.get('parts'):
+        i = 1
+        parts = kwargs.get('parts')
+        order_card += (
+            f"<b>{texts['parts']}:</b>\n"
+        )
+        for one in parts:
+            order_card += f"        {i}. {parts.get('part')}  x{parts.get('pieces')} • {parts.get('price')}{CURRENCY} • {parts.get('warranty_period')}{texts['month']}\n"
+            i += 1
+
+        order_card += "\n"
+
+    # PREPAYMENT:
+    if kwargs.get('prepayment'):
+        i = 1
+        prepayment = kwargs.get('prepayment')
+        order_card += (
+            f"<b>{texts['prepayment']}:</b>\n"
+        )
+        for one in parts:
+            order_card += f"        {i}. {prepayment.get('description')} • {prepayment.get('amount')}{CURRENCY} • {prepayment.get('date')}\n"
+            i += 1
+        
+        order_card += "\n"
+
+
+    if kwargs.get('services') or kwargs.get('parts'):
+        order_card += (
+            f"<b>{texts['total']}:</b>\n"
+            f"        <b>5500{CURRENCY}</b>\n"
+        )
+        order_card += "\n"
+
     
     return order_card
-
-
 
 
 
@@ -467,15 +485,17 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     # diagnosis = data_order.get("diagnosis")
     # #a_tip = data_order.get("a_tip")
 
-
+    # PROBLEN
     problem = data_order.get("problem")
     problem = json.loads(problem) if problem else ""
     problem = " • ".join(problem.copy())
 
+    # EQUIPMENT
     equipment = data_order.get("equipment")
     equipment = json.loads(equipment) if equipment else ""
     equipment = " • ".join(equipment.copy())
 
+    # APPEARANCE
     appearance = data_order.get("appearance")
     appearance = json.loads(appearance) if appearance else ""
     appearance = " • ".join(appearance.copy())
@@ -492,19 +512,41 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     data_created = await get_user_by_tg(created_by_telegram_id)
     real_name_created = data_created.get("real_name_created") or data_created.get("name")
     created_telegram = data_created.get("username_telegram")
-    if created_telegram: created_telegram = "@" + created_telegram
+    if created_telegram: created_telegram = created_telegram
 
     # GET DATA MASTER:
     uuid_master = data_order.get("master") # UUID
     data_master = await get_user_by_user_id(uuid_master)
     real_name_master = data_master.get("real_name_created") or data_master.get("name")
     master_telegram = data_master.get("username_telegram")
-    if master_telegram: master_telegram = "@" + master_telegram
+    if master_telegram: master_telegram = master_telegram
 
     # COMMENTS:
     comments = data_order.get("comments", []) or []
     if comments: comments = json.loads(comments, object_hook=datetime_parser).copy() # из str -> в Json
 
+    # SERVICE
+    services = data_order.get("services", []) or []
+    if services: services = json.loads(services).copy()
+
+    # PARTS
+    parts = data_order.get("parts", []) or []
+    if parts: parts = json.loads(parts).copy()
+
+    # PREPAYMENT
+    prepayment = data_order.get("parts", 0.00) or 0.00
+
+    # NET PROFIT
+    net_profit = 0
+
+    # COST REPAIR
+    cost_repair = 0
+
+    # COST PARTS
+    cost_of_parts = 0
+
+
+    # NEW DATA
     order_data = {
         'order_number': data_order.get("order_number"),
         'order_type': data_order.get("order_type"),
@@ -529,17 +571,23 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
         'diagnosis': data_order.get("diagnosis"),
         'a_tip': data_order.get("a_tip"),
         'real_name_master': real_name_master,
-        'master_telegram': master_telegram
+        'master_telegram': master_telegram,
+        'services': services,
+        'parts': parts,
+        'prepayment': prepayment,
+        'net_profit': net_profit,
+        'cost_repair': cost_repair,
+        'cost_of_parts': cost_of_parts
     }
 
     await message.answer(format_order_card(lang, **order_data), parse_mode="HTML")
     if lang == "ru":
         message_text = "Выберите то, что хотите изменить:"
 
-        buttons = [EDIT_ORDER["stat_ru"], EDIT_ORDER["dia_ru"], EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_part_ru"], EDIT_ORDER["notes_ru"], EDIT_ORDER["clear_ru"], CANCEL["ru"]]
+        buttons = [EDIT_ORDER["stat_ru"], EDIT_ORDER["dia_ru"], EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_part_ru"], EDIT_ORDER["notes_ru"], EDIT_ORDER["prepayment_ru"], EDIT_ORDER["clear_ru"], CANCEL["ru"]]
     else:
         message_text = "Select what you want to change:"
-        buttons = [EDIT_ORDER["stat"], EDIT_ORDER["dia"], EDIT_ORDER["add_serv"], EDIT_ORDER["add_part"], EDIT_ORDER["notes"], EDIT_ORDER["clear"], CANCEL["en"]]
+        buttons = [EDIT_ORDER["stat"], EDIT_ORDER["dia"], EDIT_ORDER["add_serv"], EDIT_ORDER["add_part"], EDIT_ORDER["notes"], EDIT_ORDER["prepayment"], EDIT_ORDER["clear"], CANCEL["en"]]
     await message.answer(message_text, reply_markup = build_keyboard(buttons))
 
     await state.update_data(id=id, order_number=order_number)
