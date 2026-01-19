@@ -2,9 +2,9 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, format_phone, format_date_nice
+from utils.formatters import remove_emojis, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
 from database.users import get_user_by_user_id, get_user_by_tg
-from utils.serialize import json_serializer, datetime_parser
+from utils.serialize import json_serializer, custom_json_decoder
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
@@ -18,6 +18,7 @@ from handlers.viewing_orders import Order # State из viewing_orders.py для 
 # import asyncio
 import json
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 
 
@@ -31,6 +32,7 @@ class Edit(StatesGroup):
     status = State()
     diagnos = State()
     notes = State()
+    work = State()
 
 
 
@@ -139,6 +141,121 @@ async def add_note(message: types.Message, state: FSMContext):
     await edit_order_db(lang, data, state, message)
 
 
+
+
+# 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
+# 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'warranty_period': '1'}]
+# 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
+
+
+# ADD SERVICE/WORK
+@router.message(Edit.work)
+async def add_work(message: types.Message, state: FSMContext):
+    """ Добавление услуги/работы 
+        да, колхоз.. но на одном State """
+    await typing(message)
+
+    lang = message.from_user.language_code
+    state_data = await state.get_data()
+    work, pieces, price, warranty_period = state_data.get("work"), state_data.get("pieces"), state_data.get("price"), state_data.get("warranty_period")
+    
+    if not work:
+        await state.update_data(work=message.text)
+        if lang == "ru": await message.answer("🧮 Введите количество этой услуги:")
+        else: await message.answer("🧮 Enter quantity:")
+        return
+    
+    elif work and not pieces:
+        pieces = safe_int(message.text)
+        if not pieces:
+            if lang == "ru": await message.answer("🚫 Введите количество:")
+            else: await message.answer("🚫 Enter the quantity:")
+            return
+        if lang == "ru": await message.answer("💲 Введите стоимость услуги:")
+        else: await message.answer("💲 Enter the cost of the service:")
+        await state.update_data(pieces=pieces)
+        return
+    
+    elif work and pieces and not price:
+        price = safe_decimal(message.text)
+        if not price:
+            if lang == "ru": await message.answer("🚫 Введите стоимость услуги:")
+            else: await message.answer("🚫 Enter the cost of the service:")
+            return
+        if lang == "ru": await message.answer("📅 Введите срок гарантии:")
+        else: await message.answer("📅 Enter the warranty period:")
+        await state.update_data(price=price)
+        return
+
+    elif work and pieces and price and not warranty_period:
+        warranty_period = safe_int(message.text)
+        if warranty_period is None:
+            if lang == "ru": await message.answer("🚫 Введите срок гарантии:")
+            else: await message.answer("🚫 Enter the warranty period:")
+            return
+        # if lang == "ru": await message.answer("Отлично!")
+        # else: await message.answer("Perfect!")
+        await state.update_data(warranty_period=warranty_period) # !?
+
+
+        # STATE:
+        state_data = await state.get_data()
+        id = state_data.get("id")
+        work: str = state_data.get("work")
+        pieces: int = state_data.get("pieces")
+        price: Decimal = state_data.get("price")
+        warranty_period: int = state_data.get("warranty_period")
+
+        # ORDER:
+        data_order = await order.get_order_id(id)
+        old_services = data_order.get("services")
+        old_services: list = json.loads(data_order.get("services")) if old_services else []
+
+        # ДОБАВЛЕНИЕ УСЛУГИ
+        services = {
+            'work': work,
+            'pieces': pieces,
+            'price': json_serializer(price),
+            'warranty_period': warranty_period,
+        }
+        old_services.append(services)
+
+        # РАСЧЕТ ДОХОДОВ
+        """ Расчёты основные по ценам, доходам и всему..."""
+        # cost_repair: Decimal = data_order.get("cost_repair") # Общая стоимость услуг/работ
+        # cost_of_parts: Decimal = data_order.get("cost_of_parts") # Общая стоимость запчастей
+        # prepayment: dict | str = data_order.get("prepayment") # Предоплата !!!! ?????
+        # net_profit: Decimal = data_order.get("net_profit") # Чистая прибыль заказа
+
+        cost_repair = Decimal(0)
+
+        for one in old_services:
+            cost_repair += safe_decimal(one.get("price")) * int(one.get("pieces"))
+            #cost_of_parts += one.get("price") * one.get("pieces")
+
+        # print("cost_repair:", cost_repair, "type:", type(cost_repair))
+
+        # Сохранение результатов в базу
+        data = {
+            'id': id,
+            'services': json.dumps(old_services, ensure_ascii=False),
+            'cost_repair': cost_repair,
+            #'cost_of_parts': cost_of_parts,
+            #'prepayment': prepayment,
+            #'net_profit': net_profit
+        }
+        await edit_order_db(lang, data, state, message)
+
+        # comments = data_order.get("comments", []) or []
+        # if comments: comments = json.loads(comments).copy()
+
+        await state.update_data(work=None, pieces=None, price=None, warranty_period=None)
+        #await state.clear()
+        return
+    
+
+
+
 # PUSH BUTTONS EDITION ORDER
 @router.message(Edit.order)
 async def choose_edit_order(message: types.Message, state: FSMContext):
@@ -192,15 +309,29 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
         state_data = await state.get_data()
         data = {
             "id": state_data.get("id"),
-            "services": "[]",
-            "parts": "[]",
-            "prepayment": "[]",
+            "services": None,
+            "parts": None,
+            "prepayment": None,
             "net_profit": None,
             "cost_repair": None,
             "cost_of_parts": None,
             # "cost_diagnostics": None
         }
         await edit_order_db(lang, data, state, message)
+
+
+    # ADD SERVICE/WORK
+    elif message.text in (EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_serv"]):
+        buttons = []
+        if lang == "ru":
+            buttons.append(CANCEL["ru"])
+            message_text = "🔧 Опишите выполненную работу:"
+        else:
+            buttons.append(CANCEL["en"])
+            message_text = "🔧 Describe the completed work:"
+
+        await message.answer(message_text, reply_markup = build_keyboard(buttons))
+        await state.set_state(Edit.work)
 
 
 
@@ -398,7 +529,7 @@ def format_order_card(lang, **kwargs):
             f"<b>{texts['services']}:</b>\n"
         )
         for one in services:
-            order_card += f"        {i}. {services.get('work')}  x{services.get('pieces')} • {services.get('price')}{CURRENCY} • {services.get('warranty_period')}{texts['month']}\n"
+            order_card += f"        {i}. {one.get('work')}  x{one.get('pieces')} • {one.get('price')}{CURRENCY} • {one.get('warranty_period')}{texts['month']}\n"
             i += 1
 
         order_card += "\n"
@@ -432,8 +563,9 @@ def format_order_card(lang, **kwargs):
 
     if kwargs.get('services') or kwargs.get('parts'):
         order_card += (
-            f"<b>{texts['total']}:</b>\n"
-            f"        <b>5500{CURRENCY}</b>\n"
+            f"\n"
+            f"-------------------------------\n"
+            f"<b>{texts['total']}:</b> <b>{kwargs.get('cost_repair')}{CURRENCY}</b>\n"
         )
         order_card += "\n"
 
@@ -503,7 +635,7 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     # GET DATA CLIENT:
     client_uuid = data_order.get("client_id")
     data_client = await get_user_by_user_id(client_uuid)
-    client_telegram = data_client.get("username_telegram")
+    client_telegram = format_telegram_username(data_client.get("username_telegram"))
     client_name = data_client.get("real_name") or data_client.get("name")
     client_phone = data_client.get("phone")
 
@@ -511,19 +643,18 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     created_by_telegram_id = data_order.get("created_by") # telegram id !!
     data_created = await get_user_by_tg(created_by_telegram_id)
     real_name_created = data_created.get("real_name_created") or data_created.get("name")
-    created_telegram = data_created.get("username_telegram")
-    if created_telegram: created_telegram = created_telegram
+    created_telegram = format_telegram_username(data_created.get("username_telegram"))
 
     # GET DATA MASTER:
     uuid_master = data_order.get("master") # UUID
     data_master = await get_user_by_user_id(uuid_master)
     real_name_master = data_master.get("real_name_created") or data_master.get("name")
-    master_telegram = data_master.get("username_telegram")
-    if master_telegram: master_telegram = master_telegram
+    master_telegram = format_telegram_username(data_master.get("username_telegram"))
 
     # COMMENTS:
+    # from utils.serialize import datetime_parser
     comments = data_order.get("comments", []) or []
-    if comments: comments = json.loads(comments, object_hook=datetime_parser).copy() # из str -> в Json
+    if comments: comments = json.loads(comments, object_hook=custom_json_decoder).copy() # из str -> в Json
 
     # SERVICE
     services = data_order.get("services", []) or []
@@ -540,7 +671,7 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     net_profit = 0
 
     # COST REPAIR
-    cost_repair = 0
+    cost_repair = data_order.get("cost_repair")
 
     # COST PARTS
     cost_of_parts = 0
@@ -564,7 +695,7 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
         'created_telegram': created_telegram,
         'created_date': format_date_nice(data_order.get("created_date"), lang),
         'diagnosis_before': format_date_nice(data_order.get("diagnosis_before"), lang),
-        'cost_diagnostics': int(data_order.get("cost_diagnostics")),
+        'cost_diagnostics': safe_decimal(data_order.get("cost_diagnostics")), # !?
         'problem': problem,
         'comments': comments,
         'master': data_order.get("master"),

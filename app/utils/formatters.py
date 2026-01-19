@@ -1,8 +1,7 @@
 #! app/utils/formatters.py
 import re
 from datetime import datetime, timedelta
-from decimal import Decimal
-
+from decimal import Decimal, InvalidOperation
 
 
 
@@ -67,3 +66,78 @@ def add_days_from_text(text: str) -> datetime:
     new_date = date + timedelta(days=days) if days > 0 else date
     day_str = new_date.strftime("%Y-%m-%d %H:%M:%S")
     return datetime.strptime(day_str, '%Y-%m-%d %H:%M:%S')
+
+
+def format_telegram_username(username: str) -> str | None:
+    """Форматирует имя пользователя Telegram: добавляет @ если нужно"""
+    if not username:
+        return None
+    
+    # Убираем пробелы и уже существующий @
+    username = username.strip().lstrip('@')
+    
+    if username:  # если после очистки что-то осталось
+        return f"@{username}"
+    return None
+
+
+# def safe_decimal(value) -> Decimal | None:
+#     """Безопасное преобразование в Decimal."""
+#     try:
+#         if isinstance(value, (Decimal, int, float)):
+#             num = Decimal(str(value))
+#         else:
+#             num = Decimal(str(value).strip())
+        
+#         # Абсолютное значение
+#         num = num.copy_abs()
+        
+#         return num
+#     except (InvalidOperation, ValueError, TypeError, AttributeError):
+#         return None
+
+
+# Правильная safe_decimal
+def safe_decimal(value) -> Decimal | None:
+    """Безопасное преобразование в Decimal."""
+    try:
+        if isinstance(value, Decimal):
+            return value
+        elif isinstance(value, (int, float, str)):
+            return Decimal(str(value))
+        else:
+            return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError, AttributeError):
+        return None
+
+
+
+def safe_int(value, only_positive: bool = True) -> int | None:
+    """ Из str в INT """
+    try:
+        if isinstance(value, (int, float)):
+            num = int(value)
+        else:
+            num = int(str(value).strip())
+        
+        if only_positive:
+            num = abs(num)
+        
+        return num
+    except (ValueError, TypeError, AttributeError):
+        return None
+    
+
+def safe_float(value) -> float | None:
+    """ Из str в Float"""
+    try:
+        if isinstance(value, (float, int)):
+            num = float(value)
+        else:
+            num = float(str(value).strip())
+        
+        num = abs(num)
+        
+        return num
+    except (ValueError, TypeError, AttributeError):
+        return None

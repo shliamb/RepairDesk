@@ -8,8 +8,10 @@ from aiogram.types import BotCommand
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from database.users import add_user, get_user_by_tg
+from utils.formatters import format_telegram_username
 from handlers.common import typing
-from common import day_utcnow
+from datetime import datetime
+# from common import day_utcnow
 import uuid
 import random
 
@@ -57,9 +59,9 @@ async def registration_telegram_user(message: types.Message, state: FSMContext) 
         'name': message.from_user.first_name,
         'language': lang,
         'is_admin': user_id == ADMIN_ID,
-        'time_reg': await day_utcnow(),
+        'time_reg': datetime.now(),
         'real_name': message.from_user.first_name, # Админ будет менять в админке для менеджеров
-        'username_telegram': f'@{message.from_user.username}' # @Nic_name  - что бы просто переходить в диалог с клиентом
+        'username_telegram': f'{format_telegram_username(message.from_user.username)}' # @Nic_name  - что бы просто переходить в диалог с клиентом
     })
 
     if not success:

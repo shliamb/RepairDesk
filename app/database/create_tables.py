@@ -70,12 +70,12 @@ def create_tables_in_db():
             created_date TIMESTAMP,                                                             -- Дата приема устройства
             completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
             diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
-            services TEXT,                                                                     -- Услуга - цена - гарантия
-            cost_repair DECIMAL(10, 2),                                                         -- Общая стоимость ремонта
-            parts TEXT,                                                                        -- Запчасти - цена - гарантия
+            services TEXT,                                                                      -- Услуга - цена - гарантия
+            cost_repair DECIMAL(10, 2),                                                         -- Общая стоимость ремонта/работ
+            parts TEXT,                                                                         -- Запчасти - цена - гарантия
             cost_of_parts DECIMAL(10, 2),                                                       -- Общая стоимость запчастей
             cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
-            prepayment TEXT,                                                          -- Предоплата клиента
+            prepayment TEXT,                                                                    -- Предоплата клиента
             net_profit DECIMAL(10, 2),                                                          -- Чистая прибыль с заказа
             tips DECIMAL(10, 2),                                                                -- Чаевые клиента
             path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства

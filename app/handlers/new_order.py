@@ -3,7 +3,7 @@ from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
 from database.users import add_user, get_user_by_tg, get_user_by_user_id
-from utils.formatters import parse_cost, add_days_from_text
+from utils.formatters import parse_cost, add_days_from_text, format_telegram_username
 from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
@@ -677,7 +677,7 @@ async def username_telegram(message: types.Message, state: FSMContext):
     """ username_telegram клиента """
     await typing(message)
     lang = message.from_user.language_code
-    username_telegram = message.text
+    username_telegram = format_telegram_username(message.text)
     if message.text in (MISS["ru"], MISS["en"]):
         username_telegram = None
     # Проверка в базе и предупреждение + варианты действий + валидация телеграм @name + валидация ввода 

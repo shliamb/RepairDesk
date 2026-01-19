@@ -237,6 +237,101 @@ KEY_API_DEEPSEEK = os.environ.get('key_api_deepseek')
 
 
 
+WORKS_RU = {
+    # Дисплеи
+    'screen_replacement': 'Замена экрана',
+    'touchscreen_replacement': 'Замена тачскрина',
+    'matrix_replacement': 'Замена матрицы',
+    
+    # Батареи
+    'battery_replacement': 'Замена батареи',
+    'battery_connector': 'Ремонт разъёма батареи',
+    
+    # Зарядка
+    'charging_port': 'Замена разъёма зарядки',
+    'charging_board': 'Замена платы зарядки',
+    
+    # Аудио
+    'speaker_replacement': 'Замена динамика',
+    'microphone_replacement': 'Замена микрофона',
+    'jack_replacement': 'Замена аудиоразъёма',
+    
+    # Камеры
+    'camera_replacement': 'Замена камеры',
+    'front_camera': 'Замена фронтальной камеры',
+    
+    # Кнопки
+    'power_button': 'Замена кнопки питания',
+    'volume_buttons': 'Замена кнопок громкости',
+    'home_button': 'Замена кнопки Home',
+    
+    # Корпус
+    'housing_replacement': 'Замена корпуса',
+    'back_cover': 'Замена задней крышки',
+    'glass_back': 'Замена стекла задней крышки',
+    
+    # Разъёмы
+    'usb_port': 'Замена USB-порта',
+    'hdmi_port': 'Замена HDMI-порта',
+    
+    # Охлаждение
+    'thermal_paste': 'Замена термопасты',
+    'cooler_replacement': 'Замена кулера',
+    
+    # Материнская плата
+    'motherboard_repair': 'Ремонт материнской платы',
+    'bios_reflash': 'Перепрошивка BIOS',
+    
+    # Чистка
+    'cleaning_dust': 'Чистка от пыли',
+    'liquid_damage': 'Устранение последствий залития',
+    
+    # Программные
+    'os_reinstall': 'Переустановка ОС',
+    'data_recovery': 'Восстановление данных',
+    'virus_removal': 'Удаление вирусов',
+    
+    # Диагностика
+    'diagnostics': 'Диагностика',
+    'stress_test': 'Стресс-тестирование',
+}
+
+WORKS_EN = {
+    'screen_replacement': 'Screen Replacement',
+    'touchscreen_replacement': 'Touchscreen Replacement',
+    'matrix_replacement': 'Matrix Replacement',
+    'battery_replacement': 'Battery Replacement',
+    'battery_connector': 'Battery Connector Repair',
+    'charging_port': 'Charging Port Replacement',
+    'charging_board': 'Charging Board Replacement',
+    'speaker_replacement': 'Speaker Replacement',
+    'microphone_replacement': 'Microphone Replacement',
+    'jack_replacement': 'Audio Jack Replacement',
+    'camera_replacement': 'Camera Replacement',
+    'front_camera': 'Front Camera Replacement',
+    'power_button': 'Power Button Replacement',
+    'volume_buttons': 'Volume Buttons Replacement',
+    'home_button': 'Home Button Replacement',
+    'housing_replacement': 'Housing Replacement',
+    'back_cover': 'Back Cover Replacement',
+    'glass_back': 'Back Glass Replacement',
+    'usb_port': 'USB Port Replacement',
+    'hdmi_port': 'HDMI Port Replacement',
+    'thermal_paste': 'Thermal Paste Replacement',
+    'cooler_replacement': 'Cooler Replacement',
+    'motherboard_repair': 'Motherboard Repair',
+    'bios_reflash': 'BIOS Reflash',
+    'cleaning_dust': 'Dust Cleaning',
+    'liquid_damage': 'Liquid Damage Repair',
+    'os_reinstall': 'OS Reinstallation',
+    'data_recovery': 'Data Recovery',
+    'virus_removal': 'Virus Removal',
+    'diagnostics': 'Diagnostics',
+    'stress_test': 'Stress Testing',
+}
+
+
+
 
 
 
