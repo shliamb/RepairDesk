@@ -534,11 +534,13 @@ def format_order_card(lang, **kwargs):
             'services': '🛠️ УСЛУГИ',
             'parts': '🔩 ЗАПЧАСТИ',
             'prepayment': '💵 Предоплата',
-            'total': '💰 ИТОГО',
+            'total': '💰 К ОПЛАТЕ',
+            'work': 'Работы',
+            'parts': 'Запчасти',
+            'prepayment': 'Предоплата',
+            'tips': 'Чай',
             'comments': '💬 Комментарии',
             'month': 'мес',
-
-
             'equipment': 'Комплектация',
             'appearance': 'Состояние',
             'paid': 'Платный',
@@ -568,9 +570,12 @@ def format_order_card(lang, **kwargs):
             'parts': '🔩 PARTS',
             'prepayment': '💵 Prepayment',
             'total': '💰 TOTAL',
+            'work': 'work',
+            'parts': 'parts',
+            'prepayment': 'prepayment',
+            'tips': 'tips',
             'comments': '💬 Comments',
             'month': 'mth',
-
             'equipment': 'Equipment',
             'appearance': 'Appearance',
             'paid': 'Paid',
@@ -725,26 +730,22 @@ def format_order_card(lang, **kwargs):
 
     if kwargs.get('services') or kwargs.get('parts'):
         total = kwargs.get('cost_repair') - kwargs.get('cost_of_parts') - kwargs.get('cost_prepayment')
-        # order_card += (
-        #     f"\n"
-        #     f"\n"
-        #     f"-------------------------------\n"
-        #     f"<i>{kwargs.get('cost_repair') or 0} - {kwargs.get('cost_of_parts') or 0} - {kwargs.get('cost_prepayment') or 0} = {total}</i>\n"
-        #     f"<b>{texts['total']}:</b> <b>{total}{CURRENCY}</b>\n"
-        # )
+
+        # <b>
+        # <i>
+        # <u>  - подчеркивание
+        # <code> 
+        # <pre>
 
         order_card += (
-            f"----------------\n"
-            f"<b>Стоимость</b>\n\n"
-            f"<u>Работы</u>:      {kwargs.get('cost_repair') or 0:,} {CURRENCY}\n"
-            f"<code>Запчасти</code>:    {kwargs.get('cost_of_parts') or 0:,} {CURRENCY}\n"     
-            f"Предоплата:  {kwargs.get('cost_prepayment') or 0:,} {CURRENCY}\n"
-            f"Чай:  {kwargs.get('a_tip') or 0:,} {CURRENCY}\n"
-            f"----------------\n"
-            f"<b>К оплате:   {total:,} {CURRENCY}</b>\n"
+            f"-------------------------------\n"
+            f"• <i>{texts['work']}: {kwargs.get('cost_repair') or 0:,} {CURRENCY}</i>\n"
+            f"• <i>{texts['parts']}: {kwargs.get('cost_of_parts') or 0:,} {CURRENCY}</i>\n"     
+            f"• <i>{texts['prepayment']}: {kwargs.get('cost_prepayment') or 0:,} {CURRENCY}</i>\n"
+            f"• <i>{texts['tips']}: {kwargs.get('a_tip') or 0:,} {CURRENCY}</i>\n"
+            f"-------------------------------\n"
+            f"<b>{texts['total']}: {total:,} {CURRENCY}</b>\n"
         )
-
-
         order_card += "\n"
 
     

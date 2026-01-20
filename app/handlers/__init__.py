@@ -6,6 +6,7 @@ from handlers.workshop import router as workshop
 from handlers.new_order import router as new_order
 from handlers.viewing_orders import router as viewing_orders
 from handlers.edit_order import router as edit_order
+from handlers.admin import router as admin
 
 # from handlers.reports import router as reports
 
@@ -16,11 +17,11 @@ ALL_ROUTERS = [
     workshop,
     new_order,
     viewing_orders,
-    edit_order
+    edit_order,
+    admin
     # reports,     # Отчёты
 ]
 
 # Можно группировать:
 # CLIENT_ROUTERS = [start, menu, workshop, new_order] #, reception]
 # STAFF_ROUTERS = [workshop, reports]
-
