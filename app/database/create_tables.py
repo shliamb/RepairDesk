@@ -65,19 +65,26 @@ def create_tables_in_db():
             device_model VARCHAR(100),                                                          -- Модель устройства (iPhone 16)
             equipment VARCHAR(100),                                                             -- Комплектация устройства (Зарядка)
             problem TEXT,                                                                       -- Описание проблемы
-            diagnosis TEXT,                                                                     -- Текст диагностики
             appearance VARCHAR(100),                                                            -- Внешний вид устройства
             created_date TIMESTAMP,                                                             -- Дата приема устройства
             completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
             diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
+            
+            diagnosis TEXT,                                                                     -- Текст диагностики
+            cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
+
             services TEXT,                                                                      -- Услуга - цена - гарантия
             cost_repair DECIMAL(10, 2),                                                         -- Общая стоимость ремонта/работ
+            
             parts TEXT,                                                                         -- Запчасти - цена - гарантия
             cost_of_parts DECIMAL(10, 2),                                                       -- Общая стоимость запчастей
-            cost_diagnostics DECIMAL(10, 2),                                                    -- Стоимость диагностики
+            
             prepayment TEXT,                                                                    -- Предоплата клиента
+            cost_prepayment DECIMAL(10, 2),                                                     -- Общая стоимость предоплаты
+            
             net_profit DECIMAL(10, 2),                                                          -- Чистая прибыль с заказа
             tips DECIMAL(10, 2),                                                                -- Чаевые клиента
+            
             path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства
             client_id UUID NOT NULL,                                                            -- user_id клиента заказа в UUID
             real_name_client VARCHAR(50),                                                       -- Реальное имя клиента для документов (для уменьшения обращений к базе)

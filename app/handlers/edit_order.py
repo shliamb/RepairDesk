@@ -33,6 +33,8 @@ class Edit(StatesGroup):
     diagnos = State()
     notes = State()
     work = State()
+    part = State()
+    prepayment = State()
 
 
 
@@ -142,12 +144,6 @@ async def add_note(message: types.Message, state: FSMContext):
 
 
 
-
-# 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
-# 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'warranty_period': '1'}]
-# 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
-
-
 # ADD SERVICE/WORK
 @router.message(Edit.work)
 async def add_work(message: types.Message, state: FSMContext):
@@ -193,10 +189,7 @@ async def add_work(message: types.Message, state: FSMContext):
             if lang == "ru": await message.answer("🚫 Введите срок гарантии:")
             else: await message.answer("🚫 Enter the warranty period:")
             return
-        # if lang == "ru": await message.answer("Отлично!")
-        # else: await message.answer("Perfect!")
         await state.update_data(warranty_period=warranty_period) # !?
-
 
         # STATE:
         state_data = await state.get_data()
@@ -209,7 +202,7 @@ async def add_work(message: types.Message, state: FSMContext):
         # ORDER:
         data_order = await order.get_order_id(id)
         old_services = data_order.get("services")
-        old_services: list = json.loads(data_order.get("services")) if old_services else []
+        old_services: list = json.loads(old_services) if old_services else []
 
         # ДОБАВЛЕНИЕ УСЛУГИ
         services = {
@@ -220,39 +213,190 @@ async def add_work(message: types.Message, state: FSMContext):
         }
         old_services.append(services)
 
-        # РАСЧЕТ ДОХОДОВ
-        """ Расчёты основные по ценам, доходам и всему..."""
-        # cost_repair: Decimal = data_order.get("cost_repair") # Общая стоимость услуг/работ
-        # cost_of_parts: Decimal = data_order.get("cost_of_parts") # Общая стоимость запчастей
-        # prepayment: dict | str = data_order.get("prepayment") # Предоплата !!!! ?????
-        # net_profit: Decimal = data_order.get("net_profit") # Чистая прибыль заказа
-
         cost_repair = Decimal(0)
-
         for one in old_services:
             cost_repair += safe_decimal(one.get("price")) * int(one.get("pieces"))
-            #cost_of_parts += one.get("price") * one.get("pieces")
-
-        # print("cost_repair:", cost_repair, "type:", type(cost_repair))
 
         # Сохранение результатов в базу
         data = {
             'id': id,
             'services': json.dumps(old_services, ensure_ascii=False),
             'cost_repair': cost_repair,
-            #'cost_of_parts': cost_of_parts,
-            #'prepayment': prepayment,
-            #'net_profit': net_profit
+        }
+        await edit_order_db(lang, data, state, message)
+        await state.update_data(work=None, pieces=None, price=None, warranty_period=None)
+        return
+    
+
+
+# ADD PART
+@router.message(Edit.part)
+async def add_part(message: types.Message, state: FSMContext):
+    """ Добавление запчастей """
+    await typing(message)
+
+    lang = message.from_user.language_code
+    state_data = await state.get_data()
+    part, pieces, price, warranty_period = state_data.get("part"), state_data.get("pieces"), state_data.get("price"), state_data.get("warranty_period")
+    
+    if not part:
+        await state.update_data(part=message.text)
+        if lang == "ru": await message.answer("🧮 Введите количество:")
+        else: await message.answer("🧮 Enter quantity:")
+        return
+    
+    elif part and not pieces:
+        pieces = safe_int(message.text)
+        if not pieces:
+            if lang == "ru": await message.answer("🚫 Введите количество:")
+            else: await message.answer("🚫 Enter the quantity:")
+            return
+        if lang == "ru": await message.answer("💲 Введите стоимость услуги:")
+        else: await message.answer("💲 Enter the cost of the service:")
+        await state.update_data(pieces=pieces)
+        return
+    
+    elif part and pieces and not price:
+        price = safe_decimal(message.text)
+        if not price:
+            if lang == "ru": await message.answer("🚫 Введите стоимость запчасти:")
+            else: await message.answer("🚫 Enter the cost of the spare part:")
+            return
+        if lang == "ru": await message.answer("📅 Введите срок гарантии:")
+        else: await message.answer("📅 Enter the warranty period:")
+        await state.update_data(price=price)
+        return
+
+    elif part and pieces and price and not warranty_period:
+        warranty_period = safe_int(message.text)
+        if warranty_period is None:
+            if lang == "ru": await message.answer("🚫 Введите срок гарантии:")
+            else: await message.answer("🚫 Enter the warranty period:")
+            return
+        await state.update_data(warranty_period=warranty_period) # !?
+
+        # STATE:
+        state_data = await state.get_data()
+        id = state_data.get("id")
+        part: str = state_data.get("part")
+        pieces: int = state_data.get("pieces")
+        price: Decimal = state_data.get("price")
+        warranty_period: int = state_data.get("warranty_period")
+
+        # ORDER:
+        data_order = await order.get_order_id(id)
+        old_parts = data_order.get("parts")
+        old_parts: list = json.loads(old_parts) if old_parts else []
+
+        # ДОБАВЛЕНИЕ УСЛУГИ
+        services = {
+            'part': part,
+            'pieces': pieces,
+            'price': json_serializer(price),
+            'warranty_period': warranty_period,
+        }
+        old_parts.append(services)
+
+        cost_of_parts = Decimal(0)
+
+        for one in old_parts:
+            cost_of_parts += safe_decimal(one.get("price")) * int(one.get("pieces"))
+
+        # Сохранение результатов в базу
+        data = {
+            'id': id,
+            'parts': json.dumps(old_parts, ensure_ascii=False),
+            'cost_of_parts': cost_of_parts,
         }
         await edit_order_db(lang, data, state, message)
 
-        # comments = data_order.get("comments", []) or []
-        # if comments: comments = json.loads(comments).copy()
+        await state.update_data(part=None, pieces=None, price=None, warranty_period=None)
+        return
 
-        await state.update_data(work=None, pieces=None, price=None, warranty_period=None)
-        #await state.clear()
+
+
+
+
+
+# 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
+# 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'warranty_period': '1'}]
+# 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
+
+
+
+
+
+# ADD PREPAYMENT:
+@router.message(Edit.prepayment)
+async def add_prepayment(message: types.Message, state: FSMContext):
+    """ Внесение предоплаты клиента """
+    await typing(message)
+
+    lang = message.from_user.language_code
+    state_data = await state.get_data()
+    description, amount = state_data.get("description"), state_data.get("amount")
+    
+    if not description:
+        await state.update_data(description=message.text)
+        if lang == "ru": await message.answer("💲 Вносимая сумма:")
+        else: await message.answer("💲 Deposit amount:")
         return
     
+    elif description and not amount:
+        amount = safe_decimal(message.text)
+        if not amount:
+            if lang == "ru": await message.answer("🚫 Введите вносимую сумму:")
+            else: await message.answer("🚫 Enter the amount to be deposited:")
+            return
+        await state.update_data(amount=amount)
+
+        # STATE:
+        state_data = await state.get_data()
+        id = state_data.get("id")
+        description: str = state_data.get("description")
+        amount: Decimal = state_data.get("amount")
+
+        # ORDER:
+        data_order = await order.get_order_id(id)
+        old_prepayment = data_order.get("prepayment")
+        old_prepayment: list = json.loads(old_prepayment) if old_prepayment else []
+
+        # ДОБАВЛЕНИЕ УСЛУГИ
+        prepayment = {
+            'description': description,
+            'amount': amount,
+            'date': datetime.now(),
+        }
+        old_prepayment.append(prepayment)
+
+        # РАСЧЕТ ДОХОДОВ
+        # """ Расчёты основные по ценам, доходам и всему..."""
+        # cost_repair: Decimal = data_order.get("cost_repair") # Общая стоимость услуг/работ
+        # cost_of_parts: Decimal = data_order.get("cost_of_parts") # Общая стоимость запчастей
+        # prepayment: list = data_order.get("prepayment") # Предоплата !!!! ?????
+        # net_profit: Decimal = data_order.get("net_profit") # Чистая прибыль заказа
+
+        cost_prepayment = Decimal(0)
+
+        for one in old_prepayment:
+            cost_prepayment += safe_decimal(one.get("amount"))
+
+        # Сохранение результатов в базу
+        data = {
+            'id': id,
+            'prepayment': json.dumps(old_prepayment, default=json_serializer, ensure_ascii=False),
+            'cost_prepayment': cost_prepayment
+        }
+        await edit_order_db(lang, data, state, message)
+
+        await state.update_data(description=None, amount=None, date=None)
+        return
+
+
+
+
+
+
 
 
 
@@ -334,21 +478,38 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
         await state.set_state(Edit.work)
 
 
+    # ADD PART
+    elif message.text in (EDIT_ORDER["add_part_ru"], EDIT_ORDER["add_part"]):
+        buttons = []
+        if lang == "ru":
+            buttons.append(CANCEL["ru"])
+            message_text = "🔩 Введите название запчасти:"
+        else:
+            buttons.append(CANCEL["en"])
+            message_text = "🔩 Enter the name of the spare part:"
 
-# EDIT_ORDER["prepayment_ru"]
+        await message.answer(message_text, reply_markup = build_keyboard(buttons))
+        await state.set_state(Edit.part)
 
-    # ...
-        
+
+    # ADD PREPAYMENT
+    elif message.text in (EDIT_ORDER["prepayment_ru"], EDIT_ORDER["prepayment"]):
+        buttons = []
+        if lang == "ru":
+            buttons.append(CANCEL["ru"])
+            message_text = "📝 Описания предоплаты:"
+        else:
+            buttons.append(CANCEL["en"])
+            message_text = "📝 Prepayment Descriptions:"
+
+        await message.answer(message_text, reply_markup = build_keyboard(buttons))
+        await state.set_state(Edit.prepayment)
+
 
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
         return
-
-
-
-
-
 
 
 
@@ -375,7 +536,7 @@ def format_order_card(lang, **kwargs):
             'prepayment': '💵 Предоплата',
             'total': '💰 ИТОГО',
             'comments': '💬 Комментарии',
-            'month': 'месяц',
+            'month': 'мес',
 
 
             'equipment': 'Комплектация',
@@ -408,7 +569,7 @@ def format_order_card(lang, **kwargs):
             'prepayment': '💵 Prepayment',
             'total': '💰 TOTAL',
             'comments': '💬 Comments',
-            'month': 'month',
+            'month': 'mth',
 
             'equipment': 'Equipment',
             'appearance': 'Appearance',
@@ -513,13 +674,14 @@ def format_order_card(lang, **kwargs):
     if kwargs.get('diagnosis'):
         order_card += (
             f"<b>{texts['diagnostic_result']}:</b>\n"
-            f"        {kwargs.get('diagnosis')}\n"
+            f"        <pre>{kwargs.get('diagnosis')}</pre>\n"
         )
         order_card += "\n"
 
     # 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
     # 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'warranty_period': '1'}]
     # 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
+    # cost_prepayment
 
     # SERVICES:
     if kwargs.get('services'):
@@ -529,7 +691,7 @@ def format_order_card(lang, **kwargs):
             f"<b>{texts['services']}:</b>\n"
         )
         for one in services:
-            order_card += f"        {i}. {one.get('work')}  x{one.get('pieces')} • {one.get('price')}{CURRENCY} • {one.get('warranty_period')}{texts['month']}\n"
+            order_card += f"        {i}. {one.get('work')}  x{one.get('pieces')} • {one.get('price')}{CURRENCY} • {one.get('warranty_period')} {texts['month']}\n"
             i += 1
 
         order_card += "\n"
@@ -542,7 +704,7 @@ def format_order_card(lang, **kwargs):
             f"<b>{texts['parts']}:</b>\n"
         )
         for one in parts:
-            order_card += f"        {i}. {parts.get('part')}  x{parts.get('pieces')} • {parts.get('price')}{CURRENCY} • {parts.get('warranty_period')}{texts['month']}\n"
+            order_card += f"        {i}. {one.get('part')}  x{one.get('pieces')} • {one.get('price')}{CURRENCY} • {one.get('warranty_period')} {texts['month']}\n"
             i += 1
 
         order_card += "\n"
@@ -554,19 +716,35 @@ def format_order_card(lang, **kwargs):
         order_card += (
             f"<b>{texts['prepayment']}:</b>\n"
         )
-        for one in parts:
-            order_card += f"        {i}. {prepayment.get('description')} • {prepayment.get('amount')}{CURRENCY} • {prepayment.get('date')}\n"
+        for one in prepayment:
+            order_card += f"        {i}. {one.get('description')} • {one.get('amount')}{CURRENCY} • {one.get('date')}\n"
             i += 1
         
         order_card += "\n"
 
 
     if kwargs.get('services') or kwargs.get('parts'):
+        total = kwargs.get('cost_repair') - kwargs.get('cost_of_parts') - kwargs.get('cost_prepayment')
+        # order_card += (
+        #     f"\n"
+        #     f"\n"
+        #     f"-------------------------------\n"
+        #     f"<i>{kwargs.get('cost_repair') or 0} - {kwargs.get('cost_of_parts') or 0} - {kwargs.get('cost_prepayment') or 0} = {total}</i>\n"
+        #     f"<b>{texts['total']}:</b> <b>{total}{CURRENCY}</b>\n"
+        # )
+
         order_card += (
-            f"\n"
-            f"-------------------------------\n"
-            f"<b>{texts['total']}:</b> <b>{kwargs.get('cost_repair')}{CURRENCY}</b>\n"
+            f"----------------\n"
+            f"<b>Стоимость</b>\n\n"
+            f"<u>Работы</u>:      {kwargs.get('cost_repair') or 0:,} {CURRENCY}\n"
+            f"<code>Запчасти</code>:    {kwargs.get('cost_of_parts') or 0:,} {CURRENCY}\n"     
+            f"Предоплата:  {kwargs.get('cost_prepayment') or 0:,} {CURRENCY}\n"
+            f"Чай:  {kwargs.get('a_tip') or 0:,} {CURRENCY}\n"
+            f"----------------\n"
+            f"<b>К оплате:   {total:,} {CURRENCY}</b>\n"
         )
+
+
         order_card += "\n"
 
     
@@ -653,28 +831,33 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
 
     # COMMENTS:
     # from utils.serialize import datetime_parser
-    comments = data_order.get("comments", []) or []
+    comments: list = data_order.get("comments", []) or []
     if comments: comments = json.loads(comments, object_hook=custom_json_decoder).copy() # из str -> в Json
 
     # SERVICE
-    services = data_order.get("services", []) or []
+    services: list = data_order.get("services", []) or []
     if services: services = json.loads(services).copy()
 
     # PARTS
-    parts = data_order.get("parts", []) or []
+    parts: list = data_order.get("parts", []) or []
     if parts: parts = json.loads(parts).copy()
 
     # PREPAYMENT
-    prepayment = data_order.get("parts", 0.00) or 0.00
+    prepayment: list = data_order.get("prepayment")
+    if prepayment: prepayment = json.loads(prepayment, object_hook=custom_json_decoder).copy() # из str -> в Json
+
 
     # NET PROFIT
-    net_profit = 0
+    net_profit: Decimal = data_order.get("net_profit") or 0
 
     # COST REPAIR
-    cost_repair = data_order.get("cost_repair")
+    cost_repair: Decimal = data_order.get("cost_repair") or 0
 
     # COST PARTS
-    cost_of_parts = 0
+    cost_of_parts: Decimal = data_order.get("cost_of_parts") or 0
+
+    # COST PREPAYMENT
+    cost_prepayment: Decimal = data_order.get("cost_prepayment") or 0
 
 
     # NEW DATA
@@ -708,7 +891,8 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
         'prepayment': prepayment,
         'net_profit': net_profit,
         'cost_repair': cost_repair,
-        'cost_of_parts': cost_of_parts
+        'cost_of_parts': cost_of_parts,
+        'cost_prepayment': cost_prepayment
     }
 
     await message.answer(format_order_card(lang, **order_data), parse_mode="HTML")
@@ -775,15 +959,4 @@ async def process_action_order(message: types.Message, state: FSMContext):
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
 
-    #await state.clear()
     
-
-
-
-# # --- DEBUG TEST START ---
-# @router.message()
-# async def debug_any_message(message: types.Message, state: FSMContext):
-#     current_state = await state.get_state()
-#     print(f"!!! DEBUG: Роутер edit_order ЖИВ. Текущее состояние: {current_state}")
-#     print(f"!!! DEBUG: Ожидаемое состояние: {Edit.order.state}")
-# # --- DEBUG TEST END ---
