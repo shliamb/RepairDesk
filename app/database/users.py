@@ -34,6 +34,7 @@ async def get_user_by_tg(tg_id: int) -> dict:
         return dict(record)
     return {}
 
+
 async def get_user_by_user_id(user_id: uuid) -> dict:
     """Найти пользователя по UUID ID"""
     query = "SELECT * FROM users WHERE user_id = $1"
@@ -41,3 +42,11 @@ async def get_user_by_user_id(user_id: uuid) -> dict:
     if record:
         return dict(record)
     return {}
+
+
+async def get_all_users() -> list:
+    """Получить всех пользователей users"""
+    query = f"SELECT * FROM users"
+    records = await db.fetch(query)
+    return [dict(rec) for rec in records]
+

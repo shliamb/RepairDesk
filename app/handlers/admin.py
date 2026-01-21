@@ -4,15 +4,16 @@ from logs.set_logger import set_logger
 logger = set_logger(name="admin")
 from aiogram import Router, types, F
 from aiogram.filters import Command
-# from aiogram.fsm.state import State, StatesGroup
-# from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import ADMIN_ID, PATH_LOGS #, DONE, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL
+from config import DOWNLOAD, PATH_JSON, ADMIN_ID, PATH_LOGS #, DONE, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL
 from keyboards.workshop import build_keyboard
 from database.create_tables import create_tables_in_db
 from database.deleted_tables_db import drop_all_tables_and_reset_schema
-from database.json_clients_db import json_clients_db
+from database.json_clients_db import get_json_clients_db, push_json_clients_in_db
+from database.json_orders_db import get_json_orders_db, push_json_orders_in_db
 from database import db
 import os
 # import json
@@ -42,8 +43,6 @@ async def rights_verification(user_id: int, lang: str, message: types.Message) -
     return False
  
 
-
-
 #### ADMIN MENU ####
 ####################
 
@@ -58,25 +57,25 @@ async def admin_menu(message: types.Message):
     admin_menu_text = (
         f"<b>🎛 ADMIN MENU:</b>\n\n"
         f"<b>📊 STATISTICS:</b>\n"
-        f"        Info Users – /allUs\n"
-        f"        Money – /allPay\n\n"
+        f"        • Info Users – /allUs\n"
+        f"        • Money – /allPay\n\n"
         f"<b>📝 LOGS:</b>\n"
-        f"        Get logs – /logs\n\n"
+        f"        • Get logs – /logs\n\n"
         f"<b>🗳 BACKUP & RESTORE:</b>\n"
         # f"        Backup DB – /bupDb\n"
         # f"        Restore DB – /resDb\n"
-        f"        Create Tab DB ☠️ – /crTabDb\n"
-        f"        Down users – /dnlUsers\n"
-        f"        Restore Users – /resUs\n"
-        f"        Down Orders – /dnlOrd\n"
-        f"        Restore Orders – /resOrd\n\n"
+        f"        • Create Tab DB – /crTabDb\n"
+        f"        • Down users – /dnlUsers\n"
+        f"        • Restore Users – /resUs\n"
+        f"        • Down Orders – /dnlOrd\n"
+        f"        • Restore Orders – /resOrd\n\n"
         # f"<b>💳 METHODS PAY:</b>\n"
         # f"        Add Metod – /addMe\n"
         # f"        Select Met – /selMet\n"
         # f"        Delete Met – /delMe\n\n"
         f"<b>🗑 CLEAR:</b>\n"
-        f"        All Tabs DB ☠️ – /allDel\n"
-        f"        Logs – /dLogs\n\n"
+        f"        • All Tabs DB ☠️ – /allDel\n"
+        f"        • Logs – /dLogs\n\n"
         # f"<b>📩 SENDING NEWS:</b>\n"
         # f"        Mailing – /sendN\n\n"
         # f"<b>🧪 SPECIAL:</b>\n"
@@ -190,22 +189,205 @@ async def admin_clear_logs(message: types.Message):
                 else: await message.answer("🚫 Error deleting logs")
 
 
-
 # GET CLIENTS to JSON:
 @router.message(Command('dnlUsers'))
-async def get_on_json_old_users(message: types.Message):
+async def get_json_users(message: types.Message):
     """ Вытягиваю из DB всех клиентов в JSON """
     await typing(message)
     lang = message.from_user.language_code
     user_id = message.from_user.id
     if not await rights_verification(user_id, lang, message): return
 
-    name_file = await json_clients_db()
-    # if not name_file:
-    #     await message.answer(f"No users found with money > {MIN_PAY}$ or one more pay")
-    #     return
+    filepath = await get_json_clients_db()
 
-    # if os.path.exists(name_file) and os.path.getsize(name_file) > 0:
-    #     await bot.send_document(message.chat.id, document=types.input_file.FSInputFile(name_file))
-    # else:
-    #     await bot.send_message(message.chat.id, "File (name_file) is empty or missing.")  
+    if not filepath:
+        if lang == "ru": await message.answer("🚫 Ошибка при сборе данных пользователей в JSON файл")
+        else: await message.answer("🚫 Error when collecting user data in a JSON file")
+        return
+
+    if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+
+        await message.reply_document(
+            document=types.input_file.FSInputFile(filepath),
+            caption="Get JSON file an USERS DATA"
+        )
+
+
+# GET ORDERS to JSON:
+@router.message(Command('dnlOrd'))
+async def get_json_orders(message: types.Message):
+    """ Вытягиваю из DB все Заказы в JSON """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await rights_verification(user_id, lang, message): return
+
+    filepath = await get_json_orders_db()
+
+    if not filepath:
+        if lang == "ru": await message.answer("🚫 Ошибка при сборе данных заказов в JSON файл")
+        else: await message.answer("🚫 Error when collecting orders data in a JSON file")
+        return
+
+    if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+
+        await message.reply_document(
+            document=types.input_file.FSInputFile(filepath),
+            caption="Get JSON file an ORDERS DATA"
+        )
+
+
+
+
+
+class Restore_json(StatesGroup):
+    load_json = State()
+
+
+@router.message(Restore_json.load_json)
+async def json_to_db(message: types.Message, state: FSMContext):
+    """ Запуск переноса из JSON в DB """
+    await typing(message)
+    lang = message.from_user.language_code
+    # user_id = message.from_user.id
+
+    file_extension = message.document.file_name.split('.')[-1]
+    allowed_extensions = ['json']
+    
+    #if not isinstance(message.document, types.Document) or file_extension not in allowed_extensions:
+    if not message.document or not message.document.file_name.endswith('.json'):
+        if lang == "ru": await message.answer("🚫 Прикрепите JSON файл")
+        else: await message.answer("🚫 Attach a JSON file")
+        return
+    
+    # Проверка папки, если нет - создаст
+    os.makedirs(DOWNLOAD, exist_ok=True)
+    # Безопасно создаём файл
+    filename = os.path.join(DOWNLOAD, f"uploaded-json-restore.json")
+    # Полный путь к файлу в рабочей директории
+    filepath = os.path.join(os.getcwd(), filename)
+
+    await message.bot.download(
+        message.document,
+        filepath
+    )
+
+    send_data = await state.get_data()
+    restore = send_data.get("restore")
+
+    #await message.bot.session.close() # Сбрасываю все сессии бота, перед работой с DB
+
+    if restore == "users":
+        if await push_json_clients_in_db(filepath):
+            if lang == "ru": await message.answer("OK")
+            else: await message.answer("OK")
+        else:
+            if lang == "ru": await message.answer("🚫 Ошибка..")
+            else: await message.answer("🚫 Error..")
+    elif restore == "orders":
+        if await push_json_orders_in_db(filepath):
+            if lang == "ru": await message.answer("OK")
+            else: await message.answer("OK")
+        else:
+            if lang == "ru": await message.answer("🚫 Error..")
+            else: await message.answer("🚫 Error..")
+
+    await state.clear()
+
+
+# PUSH JSON USERS DATA to DB:
+@router.message(Command('resUs'))
+async def push_json_users_to_db(message: types.Message, state: FSMContext):
+    """ Перенос JSON данных клиентов в базу """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await rights_verification(user_id, lang, message): return
+
+    await state.update_data(restore="users")
+    if lang == "ru": await message.answer("📎 Прикрепите JSON файл:", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("📎 Attach a JSON file:", reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Restore_json.load_json)
+
+
+
+# PUSH JSON ORDERS DATA to DB:
+@router.message(Command('resOrd'))
+async def push_json_orders_to_db(message: types.Message, state: FSMContext):
+    """ Перенос JSON данных заказов в базу """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await rights_verification(user_id, lang, message): return
+
+    await state.update_data(restore="orders")
+    if lang == "ru": await message.answer("📎 Прикрепите JSON файл:", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("📎 Attach a JSON file:", reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Restore_json.load_json)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # Admin Restore Users to DB in Json
+# class Restore_json(StatesGroup):
+#     load_json = State()
+
+# # Resore OLD users to DB:
+# @dp.message(Command('resUs'))
+# async def restore_old_users_admin(message: types.Message, state: FSMContext):
+#     await typing(message)
+#     id = user_id(message)
+
+#     if id != ADMIN_ID:
+#         logger_bot.error(f"This {id} shit made an attempt to enter to Admin Panel.")
+#         return
+
+#     await bot.send_message(message.chat.id, "Attach and send the necessary json file for recovery Users to DB.", parse_mode="Markdown", reply_markup=ReplyKeyboardRemove()) 
+#     await state.set_state(Restore_json.load_json)
+
+
+# @dp.message(Restore_json.load_json)
+# async def load_json_users_to_db(message: Message, state: FSMContext):
+#     await typing(message)
+#     id = user_id(message)
+    
+#     if not isinstance(message.document, types.Document):
+#         await message.answer("It's not a documents")
+#         return
+
+#     file_extension = message.document.file_name.split('.')[-1]
+#     allowed_extensions = ['json']
+
+#     if file_extension not in allowed_extensions:
+#         await message.answer("You have sent a non-json extension file.")
+#         return 
+
+#     file_name = f"uploaded-json-restore-users.json"
+#     file_path = f"{PATH_JSON_USERS}{file_name}"
+#     await bot.download(message.document, file_path)
+
+#     await bot.session.close()
+#     await dp.storage.close()
+
+
+#     res_update_db = await restore_loyal_users_to_db(file_path)
+
+#     if res_update_db:
+#         await message.answer(f"Results of adding regular Users to DB:\n{res_update_db}")
+#     else:
+#         await message.answer(f"Error of adding regular Users to DB:\n{res_update_db}")
+
+#     await state.clear()

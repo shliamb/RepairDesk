@@ -831,7 +831,6 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
     master_telegram = format_telegram_username(data_master.get("username_telegram"))
 
     # COMMENTS:
-    # from utils.serialize import datetime_parser
     comments: list = data_order.get("comments", []) or []
     if comments: comments = json.loads(comments, object_hook=custom_json_decoder).copy() # из str -> в Json
 

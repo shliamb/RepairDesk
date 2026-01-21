@@ -5,27 +5,29 @@ from config import PATH_JSON
 from datetime import datetime
 from database.users import get_all_users
 from utils.serialize import json_serializer, json_serializer, custom_json_decoder
+from database.orders import OrderService
 from database import db
 import json
 import os
 import asyncio
 
 
+orders = OrderService(db)
 
-async def get_json_clients_db():
-    """ Получение всех пользователей и 
-        формирование данных клиентов в JSON файл """
-    users_data = await get_all_users()
-    # print(users_data)
 
-    if not users_data:
+async def get_json_orders_db():
+    """ Получение всех заказов и 
+        формирование JSON файла с заказами"""
+    orders_data = await orders.get_all_orders()
+
+    if not orders_data:
         return False
 
     try:
-        json_users_data = {}
-        for user in users_data:
-            user_id = user.get("user_id")
-            json_users_data[json_serializer(user_id)] = user
+        json_orders_data = {}
+        for order in orders_data:
+            order_id = order.get("id")
+            json_orders_data[order_id] = order
 
         # Проверяем и создаём папку
         os.makedirs(PATH_JSON, exist_ok=True)
@@ -34,7 +36,7 @@ async def get_json_clients_db():
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         # Безопасно создаём файл
-        filename = os.path.join(PATH_JSON, f"users_data_{timestamp}.json")
+        filename = os.path.join(PATH_JSON, f"orders_data_{timestamp}.json")
         
         # Полный путь к файлу в рабочей директории
         filepath = os.path.join(os.getcwd(), filename)
@@ -42,7 +44,7 @@ async def get_json_clients_db():
         # Сохраняем с обработкой специальных типов
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(
-                json_users_data, 
+                json_orders_data, 
                 f, 
                 ensure_ascii=False, 
                 indent=4,
@@ -56,15 +58,15 @@ async def get_json_clients_db():
     
 
 
-async def push_json_clients_in_db(file_path):
-    """ Получение из JSON данных клиентов и
-        занесение в базу данных каждого """
+async def push_json_orders_in_db(file_path):
+    """ Получение из JSON данных заказов и
+        занесение в базу данных каждого заказа """
     # Открытие файла и в файл:
     with open(file_path, "r") as file:
 
         if not file:
             return False
 
-        users_json = json.load(file, object_hook=custom_json_decoder)
-        print(users_json)
+        orders_json = json.load(file, object_hook=custom_json_decoder)
+        print(orders_json)
         return True

@@ -142,7 +142,12 @@ class OrderService:
             return False
 
 
-
+    async def get_all_orders(self) -> list[dict]:
+        """Получить все заказы"""
+        query = f"SELECT * FROM orders"
+        
+        records = await self.db.fetch(query)
+        return [dict(rec) for rec in records]
 
 
 
