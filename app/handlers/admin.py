@@ -14,6 +14,7 @@ from database.create_tables import create_tables_in_db
 from database.deleted_tables_db import drop_all_tables_and_reset_schema
 from database.json_clients_db import get_json_clients_db, push_json_clients_in_db
 from database.json_orders_db import get_json_orders_db, push_json_orders_in_db
+from database.migration_livesklad import parse_xls_get_json
 from database import db
 import os
 # import json
@@ -66,9 +67,10 @@ async def admin_menu(message: types.Message):
         # f"        Restore DB – /resDb\n"
         f"        • Create Tab DB – /crTabDb\n"
         f"        • Down users – /dnlUsers\n"
-        f"        • Restore Users – /resUs\n"
+        f"        • Add Users – /resUs\n"
         f"        • Down Orders – /dnlOrd\n"
-        f"        • Restore Orders – /resOrd\n\n"
+        f"        • Add Orders – /resOrd\n"
+        f"        • Get JSON from livesklad – /Skl\n\n"
         # f"<b>💳 METHODS PAY:</b>\n"
         # f"        Add Metod – /addMe\n"
         # f"        Select Met – /selMet\n"
@@ -81,6 +83,8 @@ async def admin_menu(message: types.Message):
         # f"<b>🧪 SPECIAL:</b>\n"
         # f"        Paranoi mode – /blok!\n"
     )
+
+    admin_menu_text_ru = {}
 
     await message.answer(admin_menu_text, parse_mode="HTML")
 
@@ -239,59 +243,80 @@ async def get_json_orders(message: types.Message):
 
 
 
-
+# PUSH JSON DATA to DB:
 class Restore_json(StatesGroup):
     load_json = State()
 
 
+# PARSE JSON DATA and SAVE to DB
 @router.message(Restore_json.load_json)
 async def json_to_db(message: types.Message, state: FSMContext):
-    """ Запуск переноса из JSON в DB """
+    """ Запуск переноса из JSON/XLSX в DB """
     await typing(message)
     lang = message.from_user.language_code
-    # user_id = message.from_user.id
-
-    file_extension = message.document.file_name.split('.')[-1]
-    allowed_extensions = ['json']
-    
-    #if not isinstance(message.document, types.Document) or file_extension not in allowed_extensions:
-    if not message.document or not message.document.file_name.endswith('.json'):
-        if lang == "ru": await message.answer("🚫 Прикрепите JSON файл")
-        else: await message.answer("🚫 Attach a JSON file")
-        return
-    
-    # Проверка папки, если нет - создаст
-    os.makedirs(DOWNLOAD, exist_ok=True)
-    # Безопасно создаём файл
-    filename = os.path.join(DOWNLOAD, f"uploaded-json-restore.json")
-    # Полный путь к файлу в рабочей директории
-    filepath = os.path.join(os.getcwd(), filename)
-
-    await message.bot.download(
-        message.document,
-        filepath
-    )
-
     send_data = await state.get_data()
     restore = send_data.get("restore")
+    os.makedirs(DOWNLOAD, exist_ok=True)
 
-    #await message.bot.session.close() # Сбрасываю все сессии бота, перед работой с DB
+    # await message.bot.session.close() # Сбрасываю все сессии бота, перед работой с DB, не уверен что необходимо..
 
+    # USERS
     if restore == "users":
-        if await push_json_clients_in_db(filepath):
-            if lang == "ru": await message.answer("OK")
-            else: await message.answer("OK")
-        else:
-            if lang == "ru": await message.answer("🚫 Ошибка..")
-            else: await message.answer("🚫 Error..")
-    elif restore == "orders":
-        if await push_json_orders_in_db(filepath):
-            if lang == "ru": await message.answer("OK")
-            else: await message.answer("OK")
-        else:
-            if lang == "ru": await message.answer("🚫 Error..")
-            else: await message.answer("🚫 Error..")
+        if not message.document or not message.document.file_name.endswith('.json'):
+            if lang == "ru": await message.answer("🚫 Прикрепите JSON файл пользователей")
+            else: await message.answer("🚫 Attach a JSON file users")
+            return
+        
+        filename = os.path.join(DOWNLOAD, f"uploaded-json-users.json")
+        filepath = os.path.join(os.getcwd(), filename)
+        await message.bot.download(message.document, filepath)
 
+        good_case, bad_case = await push_json_clients_in_db(filepath)
+        if good_case is not False or bad_case is not False:
+            if lang == "ru": await message.answer(f"🎉 Результаты переноса из JSON пользователей: успешно ({good_case}), ошибка ({bad_case})")
+            else: await message.answer(f"🎉 The results of transferring users from JSON: successful ({good_case}), error ({bad_case})")
+        else:
+            if lang == "ru": await message.answer("🚫 Ошибка переноса из JSON пользователей")
+            else: await message.answer("🚫 Error transferring users from JSON")
+
+    # ORFDERS
+    elif restore == "orders":
+        if not message.document or not message.document.file_name.endswith('.json'):
+            if lang == "ru": await message.answer("🚫 Прикрепите JSON файл заказов")
+            else: await message.answer("🚫 Attach a JSON file orders")
+            return
+        
+        filename = os.path.join(DOWNLOAD, f"uploaded-json-orders.json")
+        filepath = os.path.join(os.getcwd(), filename)
+        await message.bot.download(message.document, filepath)
+
+        good_case, bad_case = await push_json_orders_in_db(filepath)
+        if good_case is not False or bad_case is not False:
+            if lang == "ru": await message.answer(f"🎉 Результаты переноса из JSON заказов: успешно ({good_case}), ошибка ({bad_case})")
+            else: await message.answer(f"🎉 The results of transferring orders from JSON: successful ({good_case}), error ({bad_case})")
+        else:
+            if lang == "ru": await message.answer("🚫 Ошибка переноса из JSON заказов")
+            else: await message.answer("🚫 Error transferring orders from JSON")
+
+    # LIVESKLAD
+    elif restore == "livesklad":
+        if not message.document or not message.document.file_name.lower().endswith(('.xlsx', '.xls')):
+            if lang == "ru": await message.answer("🚫 Прикрепите XLSX файл из livesklad")
+            else: await message.answer("🚫 Attach a XLSX file orders from livesklad")
+            return
+        
+        filename = os.path.join(DOWNLOAD, f"uploaded-xlsx-livesklad.xlsx")
+        filepath = os.path.join(os.getcwd(), filename)
+        await message.bot.download(message.document, filepath)
+
+        users_filepath, orders_filepath = await parse_xls_get_json(filepath)
+
+        for file_path in [users_filepath, orders_filepath]:
+            await message.reply_document(
+                document=types.input_file.FSInputFile(file_path),
+                caption="Get JSON file livesklad"
+            )
+    
     await state.clear()
 
 
@@ -310,7 +335,6 @@ async def push_json_users_to_db(message: types.Message, state: FSMContext):
     await state.set_state(Restore_json.load_json)
 
 
-
 # PUSH JSON ORDERS DATA to DB:
 @router.message(Command('resOrd'))
 async def push_json_orders_to_db(message: types.Message, state: FSMContext):
@@ -325,6 +349,22 @@ async def push_json_orders_to_db(message: types.Message, state: FSMContext):
     else: await message.answer("📎 Attach a JSON file:", reply_markup=ReplyKeyboardRemove())
     await state.set_state(Restore_json.load_json)
 
+
+# PUSH PARSE DATA FROM XLSX LIVESKLAD:
+@router.message(Command('Skl'))
+async def parse_livesklad(message: types.Message, state: FSMContext):
+    """ Парсинг файла xlsx от LiveSklad 
+        сбор клиентов и заказов в отдельные JSON файлы, 
+        их через админку можно длбавить в базу """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await rights_verification(user_id, lang, message): return
+
+    await state.update_data(restore="livesklad")
+    if lang == "ru": await message.answer("📎 Прикрепите XLSX файл от livesklad:", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("📎 Attach a XLSX file from livesklad:", reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Restore_json.load_json)
 
 
 

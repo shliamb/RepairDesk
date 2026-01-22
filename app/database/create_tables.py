@@ -25,16 +25,21 @@ def create_tables_in_db():
             user_whatsapp VARCHAR(50) UNIQUE,                                                   -- WatsApp земля ему пухом..
             user_telegram BIGINT UNIQUE,                                                        -- Telegram id
             username_telegram VARCHAR(50) UNIQUE,                                               -- Telegram Username @name
+            
             phone VARCHAR(20) UNIQUE,
             email VARCHAR(100) UNIQUE,
             name VARCHAR(50),
 
             a_tip DECIMAL(10, 2),                                                               -- Чаевые от клиента сумма за все время
+            total_spent DECIMAL(10, 2),                                                         -- Потратил клиент на ремонты за все время
+            repair_count_total INT,                                                             -- Колличество ремонтов/обращений за все время
+            
             real_name VARCHAR(50),                                                              -- Админ добавляет менеджеров и устанавливаем им реальные имена для доков
             description_user VARCHAR(200),                                                      -- Описание пользователя, для внутреннего использования
             source VARCHAR(200),                                                                -- Источник рекламы
             block BOOLEAN DEFAULT FALSE,                                                        -- Блок для пид..ов
             hum_quality VARCHAR(50),                                                            -- Бывает полезно, когда повторные обращения - экономит время и нервы   
+            
             last_visit TIMESTAMP,                                                               -- Последнее посещение
             time_reg TIMESTAMP,                                                                 -- Время регистрации
             time_zone VARCHAR(10),                                                              -- Не используется
@@ -56,7 +61,9 @@ def create_tables_in_db():
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,                                                              -- Serial номер внутренний, на всякий
             order_number VARCHAR(20) UNIQUE NOT NULL,                                           -- красивый (R-2024-0001)
+            
             location VARCHAR(50),                                                               -- Локация на будущее
+            
             sn_imei VARCHAR(50),
             status VARCHAR(50),                                                                 -- Статус заказа (новый, в работе, готов..)
             order_type VARCHAR(50),                                                             -- Тип заказа (Платный, гарантийный)
@@ -64,6 +71,7 @@ def create_tables_in_db():
             device_brand VARCHAR(50),                                                           -- Бренд устройства (Asus, Apple)
             device_model VARCHAR(100),                                                          -- Модель устройства (iPhone 16)
             equipment VARCHAR(100),                                                             -- Комплектация устройства (Зарядка)
+            
             problem TEXT,                                                                       -- Описание проблемы
             appearance VARCHAR(100),                                                            -- Внешний вид устройства
             created_date TIMESTAMP,                                                             -- Дата приема устройства
@@ -75,7 +83,8 @@ def create_tables_in_db():
 
             services TEXT,                                                                      -- Услуга - цена - гарантия
             cost_repair DECIMAL(10, 2),                                                         -- Общая стоимость ремонта/работ
-            
+            date_of_issue TIMESTAMP,                                                            -- Дата выдачи
+
             parts TEXT,                                                                         -- Запчасти - цена - гарантия
             cost_of_parts DECIMAL(10, 2),                                                       -- Общая стоимость запчастей
             
@@ -86,14 +95,19 @@ def create_tables_in_db():
             tips DECIMAL(10, 2),                                                                -- Чаевые клиента
             
             path_photo VARCHAR(100),                                                            -- Путь к фотографиям устройства
+            
             client_id UUID NOT NULL,                                                            -- user_id клиента заказа в UUID
             real_name_client VARCHAR(50),                                                       -- Реальное имя клиента для документов (для уменьшения обращений к базе)
+            
             created_by BIGINT NOT NULL,                                                         -- Оформил менеджер с телеграмм id
             real_name_created VARCHAR(50),                                                      -- Реальное имя принимающего для документов (для уменьшения обращений к базе) 
+            
             master UUID,                                                                        -- user_id мастера в UUID                                                
+            
             edit_history JSONB,                                                                 -- Позже можно цепочку изменнений вносить, кто и когда менял
+            
             comments TEXT,                                                                      -- Комментарии по ремонту
-            completed_works JSONB,                                                              -- Выполненные работы в JSON ?!
+
             FOREIGN KEY (client_id) REFERENCES users(user_id)
         );
             CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
