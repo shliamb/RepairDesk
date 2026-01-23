@@ -84,9 +84,37 @@ async def admin_menu(message: types.Message):
         # f"        Paranoi mode – /blok!\n"
     )
 
-    admin_menu_text_ru = {}
+    admin_menu_text_ru = (
+        f"<b>🎛 АДМИН МЕНЮ:</b>\n\n"
+        f"<b>📊 СТАТИСТИКА:</b>\n"
+        f"        • Инф. Польз. – /allUs\n"
+        f"        • Деньги – /allPay\n\n"
+        f"<b>📝 ЛОГИ:</b>\n"
+        f"        • Получить логи – /logs\n\n"
+        f"<b>🗳 БЕКАП и ЗАПИСЬ:</b>\n"
+        # f"        Backup DB – /bupDb\n"
+        # f"        Restore DB – /resDb\n"
+        f"        • Созд. Таблицы Базы – /crTabDb\n"
+        f"        • Скачать Польз. – /dnlUsers\n"
+        f"        • Доб. Польз. – /resUs\n"
+        f"        • Скачать Заказы – /dnlOrd\n"
+        f"        • Доб. Заказы – /resOrd\n"
+        f"        • Созд. JSON из livesklad – /Skl\n\n"
+        # f"<b>💳 METHODS PAY:</b>\n"
+        # f"        Add Metod – /addMe\n"
+        # f"        Select Met – /selMet\n"
+        # f"        Delete Met – /delMe\n\n"
+        f"<b>🗑 ОЧИСТИТЬ:</b>\n"
+        f"        • Все Табл. Базы ☠️ – /allDel\n"
+        f"        • Логи – /dLogs\n\n"
+        # f"<b>📩 SENDING NEWS:</b>\n"
+        # f"        Mailing – /sendN\n\n"
+        # f"<b>🧪 SPECIAL:</b>\n"
+        # f"        Paranoi mode – /blok!\n"
+    )
 
-    await message.answer(admin_menu_text, parse_mode="HTML")
+    if lang == "ru": await message.answer(admin_menu_text_ru, parse_mode="HTML")
+    else: await message.answer(admin_menu_text, parse_mode="HTML")
 
 
 # GET LOGS

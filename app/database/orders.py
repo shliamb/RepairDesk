@@ -109,7 +109,16 @@ class OrderService:
         
         records = await self.db.fetch(query, *statuses)  # распаковываем статусы
         return [dict(rec) for rec in records]
+    
 
+    async def get_last_orders(self, count: int = 30) -> list[dict]:
+        """Получить последние N заказов (по убыванию ID)"""
+        if not count:
+            return []
+        
+        query = """SELECT * FROM orders ORDER BY id ASC LIMIT $1""" # DESC
+        records = await self.db.fetch(query, count)
+        return [dict(rec) for rec in records]
 
 
     async def edit_order(self, order_data: dict) -> bool:

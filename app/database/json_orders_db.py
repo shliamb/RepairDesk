@@ -96,12 +96,13 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
                 "date_of_issue": json_decoder(order.get("date_of_issue")),
 
                 "parts": order.get("parts"),
-                "cost_of_parts": order.get("cost_of_parts"),
+                "cost_of_parts": json_decoder(order.get("cost_of_parts")),
+                "cost_price": json_decoder(order.get("cost_price")),
 
                 "prepayment": order.get("prepayment"),
-                "cost_prepayment": order.get("cost_prepayment"),
+                "cost_prepayment": json_decoder(order.get("cost_prepayment")),
                 
-                "net_profit": order.get("net_profit"),
+                "net_profit": json_decoder(order.get("net_profit")),
                 "tips": json_decoder(order.get("tips")),
 
                 "path_photo": order.get("path_photo"),

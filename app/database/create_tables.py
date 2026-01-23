@@ -87,6 +87,7 @@ def create_tables_in_db():
 
             parts TEXT,                                                                         -- Запчасти - цена - гарантия
             cost_of_parts DECIMAL(10, 2),                                                       -- Общая стоимость запчастей
+            cost_price DECIMAL(10, 2),                                                         -- Закупочная цена запчастей
             
             prepayment TEXT,                                                                    -- Предоплата клиента
             cost_prepayment DECIMAL(10, 2),                                                     -- Общая стоимость предоплаты

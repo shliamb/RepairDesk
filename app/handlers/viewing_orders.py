@@ -67,25 +67,26 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
 
 
         order_ru = (
-            f'<b>📋 Заказ: {order_number}</b> {"🤑" if order_type == "paid" else "🤬"}\n\n'
+            f'<b>📋 ЗАКАЗ: {order_number}</b> {"🤑" if order_type == "paid" else "🤬"}\n\n'
             f'<b>📊 Статус заказа:</b> {status}\n'
             f'<b>🙋 {real_name_client}</b>\n'
             f'<b>{device_type}:</b> {device_brand} {device_model}\n'
             f'<b>👨‍💻 Принял:</b> {real_name_created} {created_date}\n'
             f'<b>⏰ Диагностика до:</b> {diagnosis_before}\n'
-            f'<b>💰 Стоимость диагностики:</b> {cost_diagnostics} {CURRENCY}\n\n'
+            # f'<b>💰 Стоимость диагностики:</b> {cost_diagnostics} {CURRENCY}\n\n'
             f'<b>⚠️ Неисправность:</b> {problem}\n'
         )
 
-        order_en = (
-            f'<b>📋 Order: {order_number}</b> {"🤑" if order_type == "paid" else "🤬"}\n\n'
-            f'<b>🎯 Order status:</b> {status}\n'
-            f'<b>👨‍💼 {real_name_client}</b>\n'
-            f'<b>{device_type}:</b> {device_brand} {device_model}\n'
-            f'<b>📥 Has accepted:</b> {real_name_created} {created_date}\n'
-            f'<b>⏱️ Diagnosis before:</b> {diagnosis_before}\n'
-            f'<b>💵 The cost of diagnosis:</b> {cost_diagnostics} {CURRENCY}\n\n'
-            f'<b>⚠️ Malfunction:</b> {problem}\n'
+        order = (
+            f'<b>📋 {order_number}</b> • {order_type} • {status}\n\n'
+            #f'   • {order_type} and {status} status\n'
+            f'   • <b>{real_name_client}</b>\n' # <i>{created_date}</i>\n'
+            f'   • {device_type} {device_brand} {device_model}\n'
+            #f'   • {real_name_created} {created_date}\n'
+            f'   • before {diagnosis_before}\n\n'
+            # f'<b>   • The cost of diagnosis:</b> {cost_diagnostics} {CURRENCY}\n\n'
+            f'   • {problem}\n\n'
+            f'TOTAL: 1,200 {CURRENCY}'
         )
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -96,7 +97,7 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
         ])
         
         if lang == "ru": await message.answer(order_ru, parse_mode="HTML", reply_markup=keyboard)
-        else: await message.answer(order_en, parse_mode="HTML", reply_markup=keyboard)
+        else: await message.answer(order, parse_mode="HTML", reply_markup=keyboard)
         #await asyncio.sleep(0.1)
 
 
@@ -186,6 +187,23 @@ async def get_ready_orders(message: types.Message):#, state: FSMContext):
 
     # Собрать Готовые Заказы из базы
     records = await order.get_orders_by_statuses(READY_STATUSES)
+    await push_orders_bot(message, lang, records)
+
+
+# GET LAST 30 ORDERS
+@router.message((F.text == ORDER["last_ru"]) | (F.text == ORDER["last"]))
+async def get_last(message: types.Message):#, state: FSMContext):
+    """ Показать последние 30 заказов """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+
+    # Собрать Готовые Заказы из базы
+    records = await order.get_last_orders()
     await push_orders_bot(message, lang, records)
 
 
