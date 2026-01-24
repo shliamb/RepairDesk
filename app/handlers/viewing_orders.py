@@ -10,7 +10,7 @@ from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeybo
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
 from config import ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
-    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER
+    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU, ORDER_STATUS
 from keyboards.workshop import build_keyboard
 from database import db
 # from decimal import Decimal
@@ -48,47 +48,53 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
 
     for one in records:
 
+        order = ""
         id = one.get("id")
         order_number = one.get("order_number")
         order_type = one.get("order_type")
         device_type = one.get("device_type")
         device_brand = one.get("device_brand")
-        device_model = one.get("device_model")
+        device_model = one.get("device_model") or ""
         real_name_client = one.get("real_name_client")
-        real_name_created = one.get("real_name_created")
+        # real_name_created = one.get("real_name_created")
         problem = json.loads(one.get("problem")) if one.get("problem") else ""
         problem = ", ".join(problem.copy())
         status = one.get("status")
         created_date = one.get("created_date")
-        created_date = format_date_nice(created_date, lang) #created_date.strftime("%d.%m.%y %H:%M")
+        created_date = format_date_nice(created_date, lang)
         diagnosis_before = one.get("diagnosis_before")
-        diagnosis_before = format_date_nice(diagnosis_before, lang) #diagnosis_before.strftime("%d.%m.%y %H:%M")
-        cost_diagnostics = int(one.get("cost_diagnostics"))
+        diagnosis_before = format_date_nice(diagnosis_before, lang)
+        # cost_diagnostics = int(one.get("cost_diagnostics")) or 0
+        cost_repair = one.get("cost_repair") or 0
+        cost_of_parts = one.get("cost_of_parts") or 0
+        total = float(cost_repair) + float(cost_of_parts)
 
+        if lang == "ru":
+            order = (
+                f'<b>📋 {order_number}</b>{" • Гарантия" if order_type == "guarant" else ""} • {ORDER_STATUS_RU.get(status)}\n\n'
+                f'   • <b>{real_name_client}</b>\n'
+                f'   • <b>{device_type}</b> {device_brand} {device_model}\n'
+                f'   • до {diagnosis_before}\n\n'
+                f'   • {problem}\n\n'
+            )
 
-        order_ru = (
-            f'<b>📋 ЗАКАЗ: {order_number}</b> {"🤑" if order_type == "paid" else "🤬"}\n\n'
-            f'<b>📊 Статус заказа:</b> {status}\n'
-            f'<b>🙋 {real_name_client}</b>\n'
-            f'<b>{device_type}:</b> {device_brand} {device_model}\n'
-            f'<b>👨‍💻 Принял:</b> {real_name_created} {created_date}\n'
-            f'<b>⏰ Диагностика до:</b> {diagnosis_before}\n'
-            # f'<b>💰 Стоимость диагностики:</b> {cost_diagnostics} {CURRENCY}\n\n'
-            f'<b>⚠️ Неисправность:</b> {problem}\n'
-        )
+            if total:
+                order += f'   <b>ИТОГО: {total:,.0f} {CURRENCY}</b>'
 
-        order = (
-            f'<b>📋 {order_number}</b> • {order_type} • {status}\n\n'
-            #f'   • {order_type} and {status} status\n'
-            f'   • <b>{real_name_client}</b>\n' # <i>{created_date}</i>\n'
-            f'   • {device_type} {device_brand} {device_model}\n'
-            #f'   • {real_name_created} {created_date}\n'
-            f'   • before {diagnosis_before}\n\n'
-            # f'<b>   • The cost of diagnosis:</b> {cost_diagnostics} {CURRENCY}\n\n'
-            f'   • {problem}\n\n'
-            f'TOTAL: 1,200 {CURRENCY}'
-        )
+        else:
+            order = (
+                f'<b>📋 {order_number}</b>{" • Guaranty" if order_type == "guarant" else ""} • {ORDER_STATUS.get(status)}\n\n'
+                f'   • <b>{real_name_client}</b>\n'
+                f'   • <b>{device_type}</b> {device_brand} {device_model}\n'
+                f'   • until {diagnosis_before}\n\n'
+                f'   • {problem}\n\n'
+            )
+
+            if total:
+                order += f'   <b>TOTAL: {total:,.0f} {CURRENCY}</b>'
         
+
+
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(text=f'{VIEW_ORDER["change_ru"] if lang == "ru" else VIEW_ORDER["change_en"]}', callback_data=f"edit_order_{id}"),
@@ -96,8 +102,7 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
             ]
         ])
         
-        if lang == "ru": await message.answer(order_ru, parse_mode="HTML", reply_markup=keyboard)
-        else: await message.answer(order, parse_mode="HTML", reply_markup=keyboard)
+        await message.answer(order, parse_mode="HTML", reply_markup=keyboard)
         #await asyncio.sleep(0.1)
 
 

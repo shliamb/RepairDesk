@@ -12,4 +12,7 @@ app/pdf/__pycache__
 app/test.py
 json/
 downloads/
+app/pdf/out_files/
+
+
 

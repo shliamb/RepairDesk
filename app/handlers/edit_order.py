@@ -215,7 +215,7 @@ async def add_work(message: types.Message, state: FSMContext):
 
         cost_repair = Decimal(0)
         for one in old_services:
-            cost_repair += safe_decimal(one.get("price"), Decimal("0")) * int(one.get("pieces"))
+            cost_repair += safe_decimal(one.get("price", Decimal("0"))) * int(one.get("pieces"))
 
         # Сохранение результатов в базу
         data = {
@@ -261,8 +261,8 @@ async def add_part(message: types.Message, state: FSMContext):
             if lang == "ru": await message.answer("🚫 Введите количество:")
             else: await message.answer("🚫 Enter the quantity:")
             return
-        if lang == "ru": await message.answer("💲 Введите стоимость услуги:")
-        else: await message.answer("💲 Enter the cost of the service:")
+        if lang == "ru": await message.answer("💲 Введите стоимость запчасти для клиента:")
+        else: await message.answer("💲 Enter the cost of the spare part for the customer:")
         await state.update_data(pieces=pieces)
         return
     
