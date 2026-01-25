@@ -5,6 +5,7 @@ logger = set_logger(name="handlers")
 from utils.formatters import remove_emojis, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
 from database.users import get_user_by_user_id, get_user_by_tg
 from utils.serialize import json_serializer, custom_json_decoder
+from handlers.edit_client import start_edit_client
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
@@ -26,7 +27,22 @@ router = Router()
 order = OrderService(db)
 
 
-# states import from handlers/viewing_orders.py.py Order.edit and Order.action
+
+
+
+
+
+
+
+######## EDIT ORDER ############
+""" states import from handlers/viewing_orders.py.py Order.edit and Order.action
+    AT DB ORDERS example :
+    ...
+    'services': [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}] - str,
+    'parts': [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'clean_price': '350', 'warranty_period': '1'}],
+    'prepayment': [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}],
+"""
+
 class Edit(StatesGroup):
     order = State()
     status = State()
@@ -35,11 +51,6 @@ class Edit(StatesGroup):
     work = State()
     part = State()
     prepayment = State()
-
-
-
-
-
 
 
 
@@ -232,17 +243,7 @@ async def add_work(message: types.Message, state: FSMContext):
 # ADD PART
 @router.message(Edit.part)
 async def add_part(message: types.Message, state: FSMContext):
-    """ Добавление запчастей 
-        Orders.parts = [
-                    {
-            'part': 'Матрица', 
-            'pieces': '1', 
-            'price': '2500', 
-            'clean_price': '350', 
-            'warranty_period': '1'
-            }
-        ]
-        """
+    """ Добавление запчастей """
     await typing(message)
 
     lang = message.from_user.language_code
@@ -339,18 +340,6 @@ async def add_part(message: types.Message, state: FSMContext):
         return
 
 
-
-
- 
-
-# 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
-# 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'clean_price': '350', 'warranty_period': '1'}]
-# 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
-
-
-
-
-
 # ADD PREPAYMENT:
 @router.message(Edit.prepayment)
 async def add_prepayment(message: types.Message, state: FSMContext):
@@ -394,13 +383,6 @@ async def add_prepayment(message: types.Message, state: FSMContext):
         }
         old_prepayment.append(prepayment)
 
-        # РАСЧЕТ ДОХОДОВ
-        # """ Расчёты основные по ценам, доходам и всему..."""
-        # cost_repair: Decimal = data_order.get("cost_repair") # Общая стоимость услуг/работ
-        # cost_of_parts: Decimal = data_order.get("cost_of_parts") # Общая стоимость запчастей
-        # prepayment: list = data_order.get("prepayment") # Предоплата !!!! ?????
-        # net_profit: Decimal = data_order.get("net_profit") # Чистая прибыль заказа
-
         cost_prepayment = Decimal(0)
 
         for one in old_prepayment:
@@ -416,13 +398,6 @@ async def add_prepayment(message: types.Message, state: FSMContext):
 
         await state.update_data(description=None, amount=None, date=None)
         return
-
-
-
-
-
-
-
 
 
 # PUSH BUTTONS EDITION ORDER
@@ -619,11 +594,6 @@ async def format_order_card(lang, **kwargs):
             'buy': 'purchase'
         }
     
-
-
-
-
-
     # Сбор визуализации вывода заказа
     order_card = ""
     # Заказ номер:
@@ -715,11 +685,6 @@ async def format_order_card(lang, **kwargs):
         )
         order_card += "\n"
 
-    # 'services': services,     [{'work': 'Замена экрана', 'pieces': '1', 'price': '1000', 'warranty_period': '3'}]
-    # 'parts': parts,           [{'part': 'Матрица', 'pieces': '1', 'price': '2500', 'warranty_period': '1'}]
-    # 'prepayment': prepayment  [{'description': 'На матрицу', 'amount': '2500', 'date': '14.12.2025...'}]
-    # cost_prepayment
-
     # SERVICES:
     if kwargs.get('services'):
         i = 1
@@ -789,9 +754,8 @@ async def format_order_card(lang, **kwargs):
 
 
 
-
 # START OPEN FULL ORDER
-async def start_edit_order(lang: str, order_id: int, state: FSMContext, message: types.Message):
+async def start_edit_order(order_id: int, state: FSMContext, message: types.Message):
     """ Выводит заказ полностью и кнопки с редактированием """
     await typing(message)
     lang = message.from_user.language_code
@@ -955,25 +919,43 @@ async def start_edit_order(lang: str, order_id: int, state: FSMContext, message:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ######### START EDIT ##############
 @router.message(Order.edit)
 async def process_edit_order(message: types.Message, state: FSMContext):
-    """  """
+    """ После нажатия кнопки Изменить на заказе, выбираем что менять 
+        заказ или данные клиента """
     await typing(message)
     state_data = await state.get_data()
     order_id = state_data.get("id")
     lang = message.from_user.language_code
 
+    # EDIT ORDER:
     if message.text in (CHANGE_ORDER["order_ru"], CHANGE_ORDER["order_en"]):
         # Отдельный вызов редактирования заказа
-        await start_edit_order(lang, order_id, state, message)
+        await start_edit_order(order_id, state, message)
         return
 
-    elif message.text == "👤 Клиент":
-        await message.answer(f"Меняем данные клиента под заказом {order_id}")
-
-    elif message.text == "📊 Статус":
-        await message.answer(f"Меняем статус заказа {order_id}")
+    # EDIT CLIENT:
+    elif message.text in (CHANGE_ORDER["client_ru"], CHANGE_ORDER["client_en"]):
+        data_order = await order.get_order_id(order_id)
+        client_id = data_order.get("client_id")
+        await start_edit_client(client_id, state, message)
+        #await message.answer(f"Меняем данные клиента под заказом {order_id}")
+        return
 
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")

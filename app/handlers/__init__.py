@@ -6,6 +6,7 @@ from handlers.workshop import router as workshop
 from handlers.new_order import router as new_order
 from handlers.viewing_orders import router as viewing_orders
 from handlers.edit_order import router as edit_order
+from handlers.edit_client import router as edit_client
 from handlers.admin import router as admin
 
 # from handlers.reports import router as reports
@@ -18,6 +19,7 @@ ALL_ROUTERS = [
     new_order,
     viewing_orders,
     edit_order,
+    edit_client,
     admin
     # reports,     # Отчёты
 ]
