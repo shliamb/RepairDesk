@@ -3,6 +3,7 @@ from logs.set_logger import set_logger
 logger = set_logger(name="db")
 from config import PREFIXES
 from datetime import datetime
+import uuid
 
 
 
@@ -95,6 +96,17 @@ class OrderService:
         if record:
             return dict(record)
         return {}
+    
+
+    async def get_orders_by_user(self, client_id: uuid) -> list[dict]:
+        """Получить заказы с по client_id UUID"""
+        if not client_id:
+            return []
+        
+        query = f"SELECT * FROM orders WHERE client_id = $1"
+        
+        records = await self.db.fetch(query, client_id) 
+        return [dict(rec) for rec in records]
     
 
     async def get_orders_by_statuses(self, statuses: list) -> list[dict]:

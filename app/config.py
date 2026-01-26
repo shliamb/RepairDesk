@@ -85,7 +85,13 @@ ORDER_STATUS_COLOR = {
 PROBLEMS = {"ru": ["Не включается", "Не заряжается", "Нет изображения", "Греется", "Шумит", "Тормозит", "Зависает"], "en": ["Won't turn on", "Won't charge", "No image", "Heats up", "Makes noise", "Slows down", "Freezes"]}
 CANCEL =  {"ru": "🚫 Отмена", "en": "🚫 Cancellation"}
 ORDER = {"new_ru": "📝 Новый заказ", "new_en": "📝 New order", "activ_ru": "📋 Активные заказы", "activ_en": "📋 Active orders", "in_work_ru": "🔧 В работе", "in_work_en": "🔧 In progress", "ready_ru": "✅ Готовые", "ready_en": "✅ Ready", "stat_ru": "📊 Статистика", "stat_en": "📊 Statistics", "last_ru": "📋 Последние 30", "last": "📋 Last 30"}
-CLIENT = {"new_ru": "👨🏻‍💼 Создать клиента", "new_en": "👨🏻‍💼 Create a client", "serch_ru": "🔎 Найти клиента", "serch_en": "🔎 Find a client"}
+
+CLIENT = {"new_ru": "👨🏻‍💼 Создать клиента", "new_en": "👨🏻‍💼 Create a client", 
+            "serch_ru": "🔎 Найти клиента", "serch_en": "🔎 Find a client", "qserv_ru": "⚡ Быстрая услуга", 
+            "qserv": "⚡ Quick service", "accdevice_ru": "📦 Принять устройство", 
+            "accdevice": "📦 Accept device", "contact_ru": "📋 Контактные данные", "contact": "📋 Contact info",
+            "role_ru": "👥 Роль", "role": "👥 User role", "status_ru": "⭐ Рейтинг и статус", "status": "⭐ Rating & status"}
+
 MISS = {"ru": "🎲 Пропустить", "en": "🎲 Miss"}
 TYPE_ORDER = {"paid_ru": "🤑 Платный", "guarant_ru": "🤬 Гарантийный", "paid_en": "🤑 Paid", "guarant_en": "🤬 Warranty period"}
 DONE = {"ru": "✅ Готово", "en": "✅ Done"}
@@ -94,7 +100,7 @@ EQUIPMENT = {"ru": ["Устройство", "Зарядка", "Пакет", "С�
 APPEARANCE = {"ru": ["Потёртости", "Царапины", "Сколы"], "en": ["Scuffs", "Scratches", "Chips"]}
 DIAGNOSTIC_TIME = {"ru": ["Без диагностики", "1 день", "2 дня", "3 дня", "Без ограничений"], "en": ["No diagnosis", "1 day", "2 days", "3 days", "Unlimited"]}
 COST_DIAGNOSTIC = {"ru": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"], "en": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"]}
-VIEW_ORDER = {"change_ru": "✏️ Изменить", "change_en": "✏️ Сhange", "action_ru": "⚡ Действия", "action_en": "⚡ Actions"}
+VIEW_ORDER = {"change_ru": "📂 Открыть", "change_en": "📂 Open", "action_ru": "⚡ Действия", "action_en": "⚡ Actions"}
 CHANGE_ORDER = {"order_ru": "📋 Заказ", "order_en": "📋 Order", "client_ru": "🙋 Клиент", "client_en": "🙋 Client", "status_ru": "📊 Статус", "status_en": "📊 Status"}
 ACTION_ORDER = {"get_photo_ru": "📸 Фото", "get_photo_en": "📸 Photo", "get_pdf_ru": "📄 PDF", "get_pdf_en": "📄 PDF", "issue_ru": "📤 Выдать заказ", "issue_en": "📤 Issue an order"}
 

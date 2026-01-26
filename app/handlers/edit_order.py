@@ -55,9 +55,10 @@ class Edit(StatesGroup):
 
 
 # SAVE DATA TO DB Сохранение в базу изменений и вывод заказа снова
-async def edit_order_db(lang, data, state, message):
+async def edit_order_db(data: dict, state: FSMContext, message: types.Message):
     """ Изменяю в базе и вызываю снова на экран заказ"""
     id = data.get("id")
+    lang = message.from_user.language_code
     result = await order.edit_order(data)
     if not result:
         logger.error("Error in saving in the database")
@@ -68,7 +69,7 @@ async def edit_order_db(lang, data, state, message):
     if lang == "ru": await message.answer("👍 Изменения сохранены", reply_markup=ReplyKeyboardRemove())
     else: await message.answer("👍 The changes are saved", reply_markup=ReplyKeyboardRemove())
     # Вывести заказ снова, что бы видно было что изменилось..
-    await start_edit_order(lang, id, state, message)
+    await start_edit_order(id, state, message)
 
 
 # STATUS ORDER
@@ -95,7 +96,7 @@ async def choose_status(message: types.Message, state: FSMContext):
         "id": state_data.get("id"),
         "status": revers[message.text]
     }
-    await edit_order_db(lang, data, state, message)
+    await edit_order_db(data, state, message)
 
 
 # DIAGNOSTICS
@@ -119,7 +120,7 @@ async def edit_diagnos(message: types.Message, state: FSMContext):
         "id": state_data.get("id"),
         "diagnosis": message.text
     }
-    await edit_order_db(lang, data, state, message)
+    await edit_order_db(data, state, message)
 
 
 # NOTES / COMMENTS ORDER
@@ -151,7 +152,7 @@ async def add_note(message: types.Message, state: FSMContext):
         "id": state_data.get("id"),
         "comments": json.dumps(comments, default=json_serializer, ensure_ascii=False)
     }
-    await edit_order_db(lang, data, state, message)
+    await edit_order_db(data, state, message)
 
 
 
@@ -234,7 +235,7 @@ async def add_work(message: types.Message, state: FSMContext):
             'services': json.dumps(old_services, ensure_ascii=False),
             'cost_repair': cost_repair,
         }
-        await edit_order_db(lang, data, state, message)
+        await edit_order_db(data, state, message)
         await state.update_data(work=None, pieces=None, price=None, warranty_period=None)
         return
     
@@ -334,7 +335,7 @@ async def add_part(message: types.Message, state: FSMContext):
             'cost_price': cost_price # Цена всех запчастей по себистоимости
             
         }
-        await edit_order_db(lang, data, state, message)
+        await edit_order_db(data, state, message)
 
         await state.update_data(part=None, pieces=None, price=None, clean_price=None, warranty_period=None)
         return
@@ -394,7 +395,7 @@ async def add_prepayment(message: types.Message, state: FSMContext):
             'prepayment': json.dumps(old_prepayment, default=json_serializer, ensure_ascii=False),
             'cost_prepayment': cost_prepayment
         }
-        await edit_order_db(lang, data, state, message)
+        await edit_order_db(data, state, message)
 
         await state.update_data(description=None, amount=None, date=None)
         return
@@ -462,7 +463,7 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
             "cost_prepayment": None
             # "cost_diagnostics": None
         }
-        await edit_order_db(lang, data, state, message)
+        await edit_order_db(data, state, message)
 
 
     # ADD SERVICE/WORK
