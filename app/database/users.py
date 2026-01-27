@@ -50,3 +50,34 @@ async def get_all_users() -> list:
     records = await db.fetch(query)
     return [dict(rec) for rec in records]
 
+
+
+async def edit_client(client_data: dict) -> bool:
+    """Обновить данные клиента (user_id должен быть в client_data)"""
+    
+    if 'user_id' not in client_data:
+        logger.error("No user_id in client_data")
+        return False
+    
+    user_id = client_data.pop('user_id')  # вынимаем user_id: UUID
+    if not client_data:  # если кроме user_id ничего нет
+        return False
+    
+    # Формируем SET
+    set_parts = [f"{key} = ${i+1}" for i, key in enumerate(client_data.keys())]
+    values = list(client_data.values())
+    values.append(user_id)  # user_id для WHERE в конце
+    
+    query = f"""
+        UPDATE users 
+        SET {', '.join(set_parts)}
+        WHERE user_id = ${len(values)}
+    """
+    
+    try:
+        await db.execute(query, *values)
+        return True
+    except Exception as e:
+        logger.error(f"Error updating user {user_id}: {e}")
+        return False
+

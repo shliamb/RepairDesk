@@ -82,6 +82,39 @@ ORDER_STATUS_COLOR = {
     'unsuccessful_repair': '🚫'
 }
 
+
+UI_TEXTS = {
+    "ru": {
+        "yes": "👍 Да", 
+        "no": "👎 Нет", 
+        "miss": "⏩ Пропустить", 
+        "cancel": "🚫 Отмена", 
+        "done": "✅ Готово",
+        "new_cli": "👨🏻‍💼 Создать клиента",
+        "role": "👥 Роль",
+        "contact": "📋 Контактные данные",
+        "status": "⭐ Рейтинг и статус",
+        "accdevice": "📦 Принять устройство",
+        "qserv": "⚡ Быстрая услуга"
+    },
+    "en": {
+        "yes": "👍 Yes", 
+        "no": "👎 No", 
+        "miss": "⏩ Miss", 
+        "cancel": "🚫 Cancellation", 
+        "done": "✅ Done",
+        "new_cli": "👨🏻‍💼 Create a client",
+        "role": "👥 User role",
+        "contact": "📋 Contact info",
+        "status": "⭐ Rating & status",
+        "accdevice": "📦 Accept device",
+        "qserv": "⚡ Quick service"
+    },
+}
+
+
+
+
 PROBLEMS = {"ru": ["Не включается", "Не заряжается", "Нет изображения", "Греется", "Шумит", "Тормозит", "Зависает"], "en": ["Won't turn on", "Won't charge", "No image", "Heats up", "Makes noise", "Slows down", "Freezes"]}
 CANCEL =  {"ru": "🚫 Отмена", "en": "🚫 Cancellation"}
 ORDER = {"new_ru": "📝 Новый заказ", "new_en": "📝 New order", "activ_ru": "📋 Активные заказы", "activ_en": "📋 Active orders", "in_work_ru": "🔧 В работе", "in_work_en": "🔧 In progress", "ready_ru": "✅ Готовые", "ready_en": "✅ Ready", "stat_ru": "📊 Статистика", "stat_en": "📊 Statistics", "last_ru": "📋 Последние 30", "last": "📋 Last 30"}

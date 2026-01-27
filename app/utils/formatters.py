@@ -12,16 +12,66 @@ def remove_emojis(text: str) -> str:
     return cleaned.strip()
 
 
+COUNTRY_CODE = '7'
+PHONE_LENGTH = 11
+LEGACY_CODE = '8'
+
 def format_phone(phone):
-    """Форматирует телефон в красивый вид: +7 (999) 954-43-32"""
     if not phone:
-        return ""
-    phone = str(phone).replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-    if len(phone) == 11 and phone.startswith('8'):
-        phone = '7' + phone[1:]
-    if len(phone) == 11 and phone.startswith('7'):
-        return f"+7 ({phone[1:4]}) {phone[4:7]}-{phone[7:9]}-{phone[9:]}"
-    return phone
+        return None
+    
+    phone = ''.join(c for c in str(phone) if c.isdigit())
+    
+    if phone.startswith(LEGACY_CODE) and len(phone) == PHONE_LENGTH:
+        phone = COUNTRY_CODE + phone[1:]
+    
+    if len(phone) == PHONE_LENGTH - 1:
+        phone = COUNTRY_CODE + phone
+    
+    if len(phone) == PHONE_LENGTH and phone.startswith(COUNTRY_CODE):
+        return f"+{COUNTRY_CODE} ({phone[1:4]}) {phone[4:7]}-{phone[7:9]}-{phone[9:]}"
+    
+    return None
+
+
+
+
+# # Настройки телефонов
+# PHONE_COUNTRY_CODE = '7'           # Код страны
+# PHONE_TOTAL_LENGTH = 11            # Всего цифр (с кодом)
+# PHONE_LEGACY_CODE = '8'            # Устаревший код (опционально)
+# PHONE_FORMAT_TEMPLATE = "+{0} ({1}) {2}-{3}-{4}"  # Шаблон форматирования
+# PHONE_FORMAT_GROUPS = [1, 3, 3, 2, 2]  # Группировка цифр после кода
+
+
+# def format_phone(phone):
+#     if not phone:
+#         return None
+    
+#     phone = ''.join(c for c in str(phone) if c.isdigit())
+    
+#     # Замена легаси
+#     if PHONE_LEGACY_CODE and phone.startswith(PHONE_LEGACY_CODE) and len(phone) == PHONE_TOTAL_LENGTH:
+#         phone = PHONE_COUNTRY_CODE + phone[1:]
+    
+#     # Добавление кода страны
+#     if len(phone) == PHONE_TOTAL_LENGTH - len(PHONE_COUNTRY_CODE):
+#         phone = PHONE_COUNTRY_CODE + phone
+    
+#     # Валидация
+#     if len(phone) != PHONE_TOTAL_LENGTH or not phone.startswith(PHONE_COUNTRY_CODE):
+#         return None
+    
+#     # Форматирование по группам
+#     parts = [PHONE_COUNTRY_CODE]
+#     idx = len(PHONE_COUNTRY_CODE)
+#     for group_len in PHONE_FORMAT_GROUPS[1:]:  # Пропускаем первую (код страны)
+#         parts.append(phone[idx:idx + group_len])
+#         idx += group_len
+    
+#     return PHONE_FORMAT_TEMPLATE.format(*parts)
+
+
 
 
 def format_date_nice(dt_str, lang):

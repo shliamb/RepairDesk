@@ -184,9 +184,9 @@ async def add_work(message: types.Message, state: FSMContext):
         await state.update_data(pieces=pieces)
         return
     
-    elif work and pieces and not price:
+    elif work and pieces and price is None:
         price = safe_decimal(message.text)
-        if not price:
+        if price is None:
             if lang == "ru": await message.answer("🚫 Введите стоимость услуги:")
             else: await message.answer("🚫 Enter the cost of the service:")
             return
@@ -195,7 +195,7 @@ async def add_work(message: types.Message, state: FSMContext):
         await state.update_data(price=price)
         return
 
-    elif work and pieces and price and not warranty_period:
+    elif work and pieces and price is not None and not warranty_period:
         warranty_period = safe_int(message.text)
         if warranty_period is None:
             if lang == "ru": await message.answer("🚫 Введите срок гарантии:")
@@ -268,9 +268,9 @@ async def add_part(message: types.Message, state: FSMContext):
         await state.update_data(pieces=pieces)
         return
     
-    elif part and pieces and not price:
+    elif part and pieces and price is None:
         price = safe_decimal(message.text)
-        if not price:
+        if price is None:
             if lang == "ru": await message.answer("🚫 Введите стоимость запчасти:")
             else: await message.answer("🚫 Enter the cost of the spare part:")
             return
@@ -279,7 +279,7 @@ async def add_part(message: types.Message, state: FSMContext):
         await state.update_data(price=price)
         return
     
-    elif part and pieces and price and not clean_price:
+    elif part and pieces and price is not None and clean_price is None:
         clean_price = safe_decimal(message.text)
         if clean_price is None:
             if lang == "ru": await message.answer("🚫 Введите закупочную цену запчасти:")
@@ -289,7 +289,7 @@ async def add_part(message: types.Message, state: FSMContext):
         else: await message.answer("📅 Enter the warranty period:")
         await state.update_data(clean_price=clean_price)
 
-    elif part and pieces and price and clean_price and not warranty_period:
+    elif part and pieces and price is not None and clean_price is not None and not warranty_period:
         warranty_period = safe_int(message.text)
         if warranty_period is None:
             if lang == "ru": await message.answer("🚫 Введите срок гарантии:")
