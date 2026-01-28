@@ -36,8 +36,8 @@ async def workshop_panel(message: types.Message, state: FSMContext):
         buttons.extend([
             ORDER["new_ru"],
             "🔍 Найти заказ",
-            ORDER["activ_ru"],
-            ORDER["in_work_ru"],
+            # ORDER["activ_ru"],
+            # ORDER["in_work_ru"],
             ORDER["ready_ru"],
             ORDER["last_ru"],
             ORDER["stat_ru"],
@@ -48,8 +48,8 @@ async def workshop_panel(message: types.Message, state: FSMContext):
         buttons.extend([
             ORDER["new_en"],
             "🔍 Search Order",
-            ORDER["activ_en"],
-            ORDER["in_work_en"],
+            # ORDER["activ_en"],
+            # ORDER["in_work_en"],
             ORDER["ready_en"],
             ORDER["last"],
             ORDER["stat_en"],

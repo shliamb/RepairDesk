@@ -2,7 +2,7 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
+from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
 from database.users import get_user_by_user_id, get_user_by_tg
 from utils.serialize import json_serializer, custom_json_decoder
 from handlers.edit_client import start_edit_client
@@ -12,7 +12,7 @@ from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeybo
 # from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import DONE, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL
+from config import HUMAN_QUALITY, DONE, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL
 from keyboards.workshop import build_keyboard
 from database import db
 from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
@@ -526,7 +526,7 @@ async def format_order_card(lang, **kwargs):
         texts = {
             'order': '📋 ЗАКАЗ',
             'status': 'СОСТОЯНИЕ',
-            'client': '👨‍💼 КЛИЕНТ',
+            'client': 'КЛИЕНТ',
             'device': 'УСТРОЙСТВО',
             'accepted': '📥 ПРИНЯЛ',
             'master': '👨‍🔧 МАСТЕР',
@@ -564,7 +564,7 @@ async def format_order_card(lang, **kwargs):
         texts = {
             'order': '📋 ORDER',
             'status': 'CONDITION',
-            'client': '👨‍💼 CLIENT',
+            'client': 'CLIENT',
             'device': 'DEVICE',
             'accepted': '📥 ACCEPTED BY',
             'master': '👨‍🔧 MASTER',
@@ -611,7 +611,7 @@ async def format_order_card(lang, **kwargs):
     )
     # Инфа о клиенте:
     order_card += (
-        f"<b>{texts['client']}:</b>\n"
+        f"<b>{kwargs.get('ico_client')} {texts['client']}:</b>\n"
         f"        {kwargs.get('real_name_client')}\n"
     )
     if kwargs.get('client_phone'):
@@ -814,10 +814,12 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
 
     # GET DATA CLIENT:
     client_uuid = data_order.get("client_id")
+    # Получение данных клиента:
     data_client = await get_user_by_user_id(client_uuid)
     client_telegram = format_telegram_username(data_client.get("username_telegram"))
     client_name = data_client.get("real_name") or data_client.get("name")
     client_phone = data_client.get("phone")
+    hum_quality = data_client.get("hum_quality")
 
     # GET DATA MANAGER:
     created_by_telegram_id = data_order.get("created_by") # telegram id !!
@@ -864,6 +866,10 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
     cost_price: Decimal = data_order.get("cost_price") or 0
 
 
+    quality = HUMAN_QUALITY[lang].get(hum_quality) or ""
+    ico_client = extract_emoji(quality) or "😐"
+
+
     # NEW DATA
     order_data = {
         'id': id,
@@ -898,7 +904,8 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
         'net_profit': net_profit,
         'cost_repair': cost_repair,
         'cost_of_parts': cost_of_parts, # Цена всех запчастей для клиента
-        'cost_prepayment': cost_prepayment
+        'cost_prepayment': cost_prepayment,
+        'ico_client': ico_client
     }
 
     await message.answer(await format_order_card(lang, **order_data), parse_mode="HTML")

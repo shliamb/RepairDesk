@@ -82,6 +82,23 @@ ORDER_STATUS_COLOR = {
     'unsuccessful_repair': '🚫'
 }
 
+HUMAN_QUALITY = {
+    "ru": {
+        "excellent": "😍 Отличный",
+        "good": "🙂 Хороший",
+        "normal": "😐 Нормальный",
+        "bad": "😠 Проблемный",
+        "terrible": "🤬 Ужасный"
+    },
+    "en": {
+        "excellent": "😍 Excellent",
+        "good": "🙂 Good",
+        "normal": "😐 Normal",
+        "bad": "😠 Troublesome",
+        "terrible": "🤬 Terrible"
+    }
+}
+
 
 UI_TEXTS = {
     "ru": {
@@ -95,7 +112,9 @@ UI_TEXTS = {
         "contact": "📋 Контактные данные",
         "status": "⭐ Рейтинг и статус",
         "accdevice": "📦 Принять устройство",
-        "qserv": "⚡ Быстрая услуга"
+        "qserv": "⚡ Быстрая услуга",
+        "serch_cli": "🔎 Найти клиента",
+        "open": "📂 Открыть"
     },
     "en": {
         "yes": "👍 Yes", 
@@ -108,7 +127,9 @@ UI_TEXTS = {
         "contact": "📋 Contact info",
         "status": "⭐ Rating & status",
         "accdevice": "📦 Accept device",
-        "qserv": "⚡ Quick service"
+        "qserv": "⚡ Quick service",
+        "serch_cli": "🔎 Find a client",
+        "open": "📂 Open"
     },
 }
 

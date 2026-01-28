@@ -81,3 +81,23 @@ async def edit_client(client_data: dict) -> bool:
         logger.error(f"Error updating user {user_id}: {e}")
         return False
 
+
+async def search_clients(field: str, search_term: str, exact_match: bool = False) -> list[dict]:
+    """
+    Поиск клиентов по полю.
+    
+    Args:
+        field: 'name', 'username_telegram', 'phone'
+        search_term: что ищем
+        exact_match: True для точного совпадения (=), False для частичного (LIKE)
+    """
+    if exact_match:
+        query = f"SELECT * FROM users WHERE {field} = $1"
+        params = [search_term]
+    else:
+        # Для частичного совпадения (регистронезависимо)
+        query = f"SELECT * FROM users WHERE LOWER({field}) LIKE LOWER($1)"
+        params = [f"%{search_term}%"]
+    
+    records = await db.fetch(query, *params)
+    return [dict(rec) for rec in records]

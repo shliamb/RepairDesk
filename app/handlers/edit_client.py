@@ -2,16 +2,17 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
+from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
 from database.users import get_user_by_user_id, edit_client, get_user_by_tg
 from utils.serialize import json_serializer, custom_json_decoder
+from handlers.new_order import create_order
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 # from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import UI_TEXTS, CURRENCY
+from config import UI_TEXTS, CURRENCY, HUMAN_QUALITY
 from keyboards.workshop import build_keyboard
 from database import db
 # from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
@@ -33,6 +34,7 @@ class EditClient(StatesGroup):
     client = State()
     data_client = State()
     role_client = State()
+    rating = State()
 
 
 
@@ -206,15 +208,72 @@ async def role_client(message: types.Message, state: FSMContext):
         elif input_text in UI_TEXTS[lang]["no"]:
             is_master = False
         
-        client_data = {
-            "user_id": client_id,
-            "is_admin": is_admin,
-            "is_manager": is_manager,
-            "is_master": is_master
-        }
+    else:
+        if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+        else: await message.answer("🚫 Try again to select an item from the menu")
+        return
 
-        await edit_client_db(client_data, state, message)
-        await state.update_data(is_admin=None, is_manager=None, is_master=None)
+
+    client_data = {
+        "user_id": client_id,
+        "is_admin": is_admin,
+        "is_manager": is_manager,
+        "is_master": is_master
+    }
+
+    await edit_client_db(client_data, state, message)
+    await state.update_data(is_admin=None, is_manager=None, is_master=None)
+
+
+
+
+
+# EDIT STATUS CLIENT
+@router.message(EditClient.rating)
+async def status_client(message: types.Message, state: FSMContext):
+    """ Изменение статуса/рейтинг клиента/пользователя в системе """
+    await typing(message)
+    lang = message.from_user.language_code
+    input_text = message.text
+
+    # STATE:
+    state_data = await state.get_data()
+    client_id = state_data.get("client_id")
+
+    hum_quality, description_user = state_data.get("hum_quality"), state_data.get("description_user")
+
+    if hum_quality is None:
+        if input_text in ([*HUMAN_QUALITY[lang].values()]):
+            reverse_dict = {text: key for key, text in HUMAN_QUALITY[lang].items()}
+            hum_quality = reverse_dict[input_text]
+            await state.update_data(hum_quality=hum_quality)
+            if lang == "ru": text = "💬 Особенности клиента:"
+            else: text = "👔 Client Features:"
+            await message.answer(text, reply_markup = build_keyboard([UI_TEXTS[lang]["cancel"]]))
+            return
+
+    elif hum_quality is not None and description_user is None:
+        if input_text in UI_TEXTS[lang]["miss"]:
+            data_of_client_from_db = await get_user_by_user_id(client_id)
+            description_user = data_of_client_from_db.get("description_user")
+        else:
+            description_user = input_text
+        
+    else:
+        if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+        else: await message.answer("🚫 Try again to select an item from the menu")
+        return
+
+    client_data = {
+        "user_id": client_id,
+        "hum_quality": hum_quality,
+        "description_user": description_user,
+    }
+
+    await edit_client_db(client_data, state, message)
+    await state.update_data(hum_quality=None, description_user=None)
+
+
 
 
 
@@ -242,17 +301,25 @@ async def process_choice_client(message: types.Message, state: FSMContext):
         await state.set_state(EditClient.role_client)
         return
     
-
-    
-    # CHANG STATUS CLIENT:
+    # CHANGE STATUS CLIENT:
     elif message.text in UI_TEXTS[lang]["status"]:
-        await message.answer(f"Меняем status")
+        if lang == "ru": text = "⭐ Установить рейтинг клиента:"
+        else: text = "⭐ Set the client's rating:"
+        await message.answer(text, reply_markup = build_keyboard([*HUMAN_QUALITY[lang].values(), UI_TEXTS[lang]["cancel"]]))
+        await state.set_state(EditClient.rating)
         return
     
     # ACCEPT DEVICE at CLIENT:
     elif message.text in UI_TEXTS[lang]["accdevice"]:
-        await message.answer(f"accept device")
-        return
+        state_data = await state.get_data()
+        client_id = state_data.get("client_id")
+        client_data = await get_user_by_user_id(client_id)
+        if client_data: await create_order(
+            message, state, 
+            user_id=client_id, 
+            name=client_data.get("name"), 
+            phone=client_data.get("phone")
+        )
     
     # QUICK SERVICE:
     elif message.text in UI_TEXTS[lang]["qserv"]: 
@@ -306,9 +373,13 @@ async def start_edit_client(client_id: uuid, state: FSMContext, message: types.M
         UI_TEXTS[lang]["status"],  # (reviews, tips, block user)"
         UI_TEXTS[lang]["cancel"]
     ]
+
+    quality = HUMAN_QUALITY[lang].get(hum_quality) or ""
+    hum_quality = remove_emojis(quality) or None
+    ico_client = extract_emoji(quality) or "😐"
     
     if lang == "ru":
-        customer_card = f"🙋 <b>{name}</b>\n"
+        customer_card = f"{ico_client} <b>{name}</b>\n"
         if username_telegram: customer_card += f"        {username_telegram}\n"
         if phone: customer_card += f"        {phone}\n"
 
@@ -323,7 +394,7 @@ async def start_edit_client(client_id: uuid, state: FSMContext, message: types.M
         if is_master: customer_card += f"        Мастер\n"
         if not is_admin and not client_is_manager and not is_master: customer_card += f"        Клиент\n"
 
-        if block or description_user or hum_quality: customer_card += "\n📝 <b>МЕТКИ:</b>\n"
+        if block or description_user or hum_quality: customer_card += "\n⭐ <b>МЕТКИ:</b>\n"
         if description_user: customer_card += f"        Описание: {description_user}\n"
         if hum_quality: customer_card += f"        Качество: {hum_quality}\n"
         if block: customer_card += f"        Заблокирован\n"
@@ -342,7 +413,7 @@ async def start_edit_client(client_id: uuid, state: FSMContext, message: types.M
             customer_card += f" • {format_date_nice(created_date, lang)}\n"
 
     else:
-        customer_card = f"🙋 <b>{name}</b>\n"
+        customer_card = f"{ico_client} <b>{name}</b>\n"
         if username_telegram: customer_card += f"        {username_telegram}\n"
         if phone: customer_card += f"        {phone}\n"
 
@@ -357,7 +428,7 @@ async def start_edit_client(client_id: uuid, state: FSMContext, message: types.M
         if is_master: customer_card += f"        Master\n"
         if not is_admin and not client_is_manager and not is_master: customer_card += f"        Customer\n"
 
-        if block or description_user or hum_quality: customer_card += "\n📝 <b>TAGS:</b>\n"
+        if block or description_user or hum_quality: customer_card += "\n⭐ <b>TAGS:</b>\n"
         if description_user: customer_card += f"        Description: {description_user}\n"
         if hum_quality: customer_card += f"        Quality: {hum_quality}\n"
         if block: customer_card += f"        Blocked\n"

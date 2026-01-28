@@ -10,7 +10,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
-from config import get_brands, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
+from config import get_brands, UI_TEXTS, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
 from keyboards.workshop import build_keyboard
 # from datetime import datetime, timedelta
 import re
@@ -737,15 +737,18 @@ async def client(message: types.Message, state: FSMContext):
     """ Выбор добавления клиента или поиск """
     await typing(message)
     lang = message.from_user.language_code
-    if message.text in (CLIENT["serch_ru"], CLIENT["serch_en"]):
-        await message.answer("🚫 In development..", reply_markup=ReplyKeyboardRemove()) #### !!!! ####
-        await state.set_state(newOrder.search_client)
-        await state.clear()
-        return
-    elif message.text in (CLIENT["new_ru"], CLIENT["new_en"]):
+
+    # if message.text in (CLIENT["serch_ru"], CLIENT["serch_en"]):
+    #     await message.answer("🚫 In development..", reply_markup=ReplyKeyboardRemove()) #### !!!! ####
+    #     await state.set_state(newOrder.search_client)
+    #     await state.clear()
+    #     return
+    
+    if message.text in (CLIENT["new_ru"], CLIENT["new_en"]):
         if lang == "ru": await message.answer("✍️ Введите Имя нового клиента:", reply_markup = build_keyboard([CANCEL["ru"]]))
         else: await message.answer("✍️ Enter the new client's name:", reply_markup = build_keyboard([CANCEL["en"]]))
         await state.set_state(newOrder.name_client)
+
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
@@ -762,8 +765,9 @@ async def new_order(message: types.Message, state: FSMContext):
         logger.error(f"{user_id} You don't have access")
         await message.answer("🔐 You don't have access")
         return
-    if lang == "ru": await message.answer("👨🏻‍💼 Найти клиента или создать заново:", reply_markup = build_keyboard([CLIENT["new_ru"], CLIENT["serch_ru"]])) 
-    else: await message.answer("👨🏻‍💼 Find a client or create anew:", reply_markup = build_keyboard([CLIENT["new_en"], CLIENT["serch_en"]])) 
+    if lang == "ru": text = "👨🏻‍💼 Найти клиента или создать заново:"
+    else: text = "👨🏻‍💼 Find a client or create anew:"
+    await message.answer(text, reply_markup = build_keyboard([UI_TEXTS[lang]["new_cli"], UI_TEXTS[lang]["serch_cli"]])) 
     await state.set_state(newOrder.client)
 
 

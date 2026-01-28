@@ -5,11 +5,41 @@ from decimal import Decimal, InvalidOperation
 
 
 
+
+
+
+
+def clean_user_input(text: str) -> str:
+    """
+    Очищает ввод, но оставляет запятые, точки, дефисы для имён.
+    """
+    # Удаляем только действительно опасные для SQL/инъекций
+    sql_dangerous = [';', '--', '/*', '*/', "'", '"', '`', '=', '%']
+    
+    for char in sql_dangerous:
+        text = text.replace(char, ' ')
+    
+    # Оставляем нормальные знаки препинания
+    text = re.sub(r'\s+', ' ', text)  # Множественные пробелы
+    return text.strip()
+
+
+
 def remove_emojis(text: str) -> str:
     """Удаляет эмодзи и лишние пробелы в начале/конце"""
     import re
     cleaned = re.sub(r'[^\w\s,.!?;:()\-@#%&*+=/\\|"\'<>$€£¥₹₽]', '', str(text))
     return cleaned.strip()
+
+
+def extract_emoji(text: str) -> str:
+    """Вырезает всё, кроме эмодзи (предполагая, что он там есть)"""
+    cleaned = ''.join([c for c in str(text) if not c.isalnum() and not c.isspace()])
+    # Удаляем оставшиеся знаки препинания (опционально)
+    import string
+    for punct in string.punctuation:
+        cleaned = cleaned.replace(punct, '')
+    return cleaned
 
 
 COUNTRY_CODE = '7'
@@ -32,45 +62,6 @@ def format_phone(phone):
         return f"+{COUNTRY_CODE} ({phone[1:4]}) {phone[4:7]}-{phone[7:9]}-{phone[9:]}"
     
     return None
-
-
-
-
-# # Настройки телефонов
-# PHONE_COUNTRY_CODE = '7'           # Код страны
-# PHONE_TOTAL_LENGTH = 11            # Всего цифр (с кодом)
-# PHONE_LEGACY_CODE = '8'            # Устаревший код (опционально)
-# PHONE_FORMAT_TEMPLATE = "+{0} ({1}) {2}-{3}-{4}"  # Шаблон форматирования
-# PHONE_FORMAT_GROUPS = [1, 3, 3, 2, 2]  # Группировка цифр после кода
-
-
-# def format_phone(phone):
-#     if not phone:
-#         return None
-    
-#     phone = ''.join(c for c in str(phone) if c.isdigit())
-    
-#     # Замена легаси
-#     if PHONE_LEGACY_CODE and phone.startswith(PHONE_LEGACY_CODE) and len(phone) == PHONE_TOTAL_LENGTH:
-#         phone = PHONE_COUNTRY_CODE + phone[1:]
-    
-#     # Добавление кода страны
-#     if len(phone) == PHONE_TOTAL_LENGTH - len(PHONE_COUNTRY_CODE):
-#         phone = PHONE_COUNTRY_CODE + phone
-    
-#     # Валидация
-#     if len(phone) != PHONE_TOTAL_LENGTH or not phone.startswith(PHONE_COUNTRY_CODE):
-#         return None
-    
-#     # Форматирование по группам
-#     parts = [PHONE_COUNTRY_CODE]
-#     idx = len(PHONE_COUNTRY_CODE)
-#     for group_len in PHONE_FORMAT_GROUPS[1:]:  # Пропускаем первую (код страны)
-#         parts.append(phone[idx:idx + group_len])
-#         idx += group_len
-    
-#     return PHONE_FORMAT_TEMPLATE.format(*parts)
-
 
 
 
@@ -131,22 +122,6 @@ def format_telegram_username(username: str) -> str | None:
     return None
 
 
-# def safe_decimal(value) -> Decimal | None:
-#     """Безопасное преобразование в Decimal."""
-#     try:
-#         if isinstance(value, (Decimal, int, float)):
-#             num = Decimal(str(value))
-#         else:
-#             num = Decimal(str(value).strip())
-        
-#         # Абсолютное значение
-#         num = num.copy_abs()
-        
-#         return num
-#     except (InvalidOperation, ValueError, TypeError, AttributeError):
-#         return None
-
-
 # Правильная safe_decimal
 def safe_decimal(value) -> Decimal | None:
     """Безопасное преобразование в Decimal."""
@@ -191,3 +166,44 @@ def safe_float(value) -> float | None:
         return num
     except (ValueError, TypeError, AttributeError):
         return None
+    
+
+
+
+
+
+
+# # Настройки телефонов
+# PHONE_COUNTRY_CODE = '7'           # Код страны
+# PHONE_TOTAL_LENGTH = 11            # Всего цифр (с кодом)
+# PHONE_LEGACY_CODE = '8'            # Устаревший код (опционально)
+# PHONE_FORMAT_TEMPLATE = "+{0} ({1}) {2}-{3}-{4}"  # Шаблон форматирования
+# PHONE_FORMAT_GROUPS = [1, 3, 3, 2, 2]  # Группировка цифр после кода
+
+
+# def format_phone(phone):
+#     if not phone:
+#         return None
+    
+#     phone = ''.join(c for c in str(phone) if c.isdigit())
+    
+#     # Замена легаси
+#     if PHONE_LEGACY_CODE and phone.startswith(PHONE_LEGACY_CODE) and len(phone) == PHONE_TOTAL_LENGTH:
+#         phone = PHONE_COUNTRY_CODE + phone[1:]
+    
+#     # Добавление кода страны
+#     if len(phone) == PHONE_TOTAL_LENGTH - len(PHONE_COUNTRY_CODE):
+#         phone = PHONE_COUNTRY_CODE + phone
+    
+#     # Валидация
+#     if len(phone) != PHONE_TOTAL_LENGTH or not phone.startswith(PHONE_COUNTRY_CODE):
+#         return None
+    
+#     # Форматирование по группам
+#     parts = [PHONE_COUNTRY_CODE]
+#     idx = len(PHONE_COUNTRY_CODE)
+#     for group_len in PHONE_FORMAT_GROUPS[1:]:  # Пропускаем первую (код страны)
+#         parts.append(phone[idx:idx + group_len])
+#         idx += group_len
+    
+#     return PHONE_FORMAT_TEMPLATE.format(*parts)
