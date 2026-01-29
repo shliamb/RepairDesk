@@ -114,7 +114,14 @@ UI_TEXTS = {
         "accdevice": "📦 Принять устройство",
         "qserv": "⚡ Быстрая услуга",
         "serch_cli": "🔎 Найти клиента",
-        "open": "📂 Открыть"
+        "serch_order": "🔎 Найти заказ",
+        "open": "📂 Открыть",
+        "new_order": "📝 Новый заказ",
+        "ready_orders": "✅ Готовые",
+        "last_orders": "📋 Последние 30",
+        "stat": "📊 Статистика",
+        "activ_orders": "📋 Активные заказы",
+        "in_work_orders": "🔧 В работе",
     },
     "en": {
         "yes": "👍 Yes", 
@@ -129,7 +136,14 @@ UI_TEXTS = {
         "accdevice": "📦 Accept device",
         "qserv": "⚡ Quick service",
         "serch_cli": "🔎 Find a client",
-        "open": "📂 Open"
+        "serch_order": "🔎 Search Order",
+        "open": "📂 Open",
+        "new_order": "📝 New order",
+        "ready_orders": "✅ Ready",
+        "last_orders": "📋 Last 30",
+        "stat": "📊 Statistics",
+        "activ_orders": "📋 Active orders",
+        "in_work_orders": "🔧 In progress",
     },
 }
 

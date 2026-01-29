@@ -9,7 +9,7 @@ from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 # from keyboards import wskey
 from keyboards.workshop import build_keyboard
-from config import CANCEL, ORDER
+from config import CANCEL, ORDER, UI_TEXTS
 
 
 
@@ -33,28 +33,20 @@ async def workshop_panel(message: types.Message, state: FSMContext):
     buttons = []
     if lang == "ru":
         desc_text = "⚙️ Выберите действие:"
-        buttons.extend([
-            ORDER["new_ru"],
-            "🔍 Найти заказ",
-            # ORDER["activ_ru"],
-            # ORDER["in_work_ru"],
-            ORDER["ready_ru"],
-            ORDER["last_ru"],
-            ORDER["stat_ru"],
-            CANCEL["ru"],
-        ])
     else:
         desc_text = "⚙️ Select an action:"
-        buttons.extend([
-            ORDER["new_en"],
-            "🔍 Search Order",
-            # ORDER["activ_en"],
-            # ORDER["in_work_en"],
-            ORDER["ready_en"],
-            ORDER["last"],
-            ORDER["stat_en"],
-            CANCEL["en"]
-        ])
+
+    buttons.extend([
+        UI_TEXTS[lang]["new_order"], 
+        UI_TEXTS[lang]["serch_order"], 
+        # UI_TEXTS[lang]["activ_orders"], 
+        # UI_TEXTS[lang]["in_work_orders"], 
+        UI_TEXTS[lang]["ready_orders"], 
+        UI_TEXTS[lang]["last_orders"], 
+        UI_TEXTS[lang]["stat"],
+        UI_TEXTS[lang]["cancel"]
+    ])
+
     await message.answer(desc_text, reply_markup = build_keyboard(buttons)) 
      
 

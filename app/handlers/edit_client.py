@@ -72,7 +72,7 @@ async def edit_client_db(data: dict, state: FSMContext, message: types.Message):
 
 
 
-# ADD SERVICE/WORK
+# EDIT INFO DATA CLIENT
 @router.message(EditClient.data_client)
 async def data_client(message: types.Message, state: FSMContext):
     """ Изменение данных клиента/пользователя в базе """
@@ -98,39 +98,32 @@ async def data_client(message: types.Message, state: FSMContext):
         else: await message.answer("📞 Enter phone number:", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
         return
 
-    elif name and not phone:
+    elif name and phone is None:
         if input_text in UI_TEXTS[lang]["miss"]:
             data_of_client_from_db = await get_user_by_user_id(client_id)
-            phone = data_of_client_from_db.get("phone")
+            phone = data_of_client_from_db.get("phone") or " "
         else:
-            phone = input_text
-        phone = format_phone(phone)
+            phone = format_phone(input_text)
 
-        if not phone:
-            if lang == "ru": await message.answer("📞 Введите номер телефона:", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
-            else: await message.answer("📞 Enter phone number:", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
-            return
         await state.update_data(phone=phone)
         if lang == "ru": await message.answer("@️ Введите телеграмм имя (@name):", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
         else: await message.answer("@️ Enter telegram name (@name):", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
         return
 
-    elif name and phone and not username_telegram:
+    elif name and phone and username_telegram is None:
         if input_text in UI_TEXTS[lang]["miss"]:
             data_of_client_from_db = await get_user_by_user_id(client_id)
             username_telegram = data_of_client_from_db.get("username_telegram")
         else:
-            username_telegram = input_text
-        username_telegram = format_telegram_username(username_telegram)
-        if username_telegram is None:
-            if lang == "ru": await message.answer("@️ Введите телеграмм имя (@name):", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
-            else: await message.answer("@️ Enter telegram name (@name):", reply_markup = build_keyboard([UI_TEXTS[lang]["miss"]]))
-            return
+            username_telegram = format_telegram_username(input_text)
+
+        phone = state_data.get("phone")
+        if phone == " ": phone = None
 
         client_data = {
             "user_id": client_id,
             "name": client_name,
-            "phone": state_data.get("phone"),
+            "phone": phone,
             "username_telegram": username_telegram
         }
 
@@ -143,8 +136,6 @@ async def data_client(message: types.Message, state: FSMContext):
             await order.edit_order(new_data_order)
 
         await state.update_data(name=None, phone=None, username_telegram=None)
-
-
 
 
 
@@ -213,7 +204,6 @@ async def role_client(message: types.Message, state: FSMContext):
         else: await message.answer("🚫 Try again to select an item from the menu")
         return
 
-
     client_data = {
         "user_id": client_id,
         "is_admin": is_admin,
@@ -223,8 +213,6 @@ async def role_client(message: types.Message, state: FSMContext):
 
     await edit_client_db(client_data, state, message)
     await state.update_data(is_admin=None, is_manager=None, is_master=None)
-
-
 
 
 
@@ -272,8 +260,6 @@ async def status_client(message: types.Message, state: FSMContext):
 
     await edit_client_db(client_data, state, message)
     await state.update_data(hum_quality=None, description_user=None)
-
-
 
 
 
@@ -333,11 +319,17 @@ async def process_choice_client(message: types.Message, state: FSMContext):
 
 
 # START EDIT DATA USER AT HER UUID
-async def start_edit_client(client_id: uuid, state: FSMContext, message: types.Message):
+async def start_edit_client(
+        client_id: uuid, 
+        state: FSMContext, 
+        message: types.Message, 
+        user_id: int = None, 
+        lang: str = None
+    ):
     """ Меняем данные клиента """
     await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
+    if not lang: lang = message.from_user.language_code
+    if not user_id: user_id = message.from_user.id
 
     if not await is_manager(user_id):
         logger.error(f"{user_id} You don't have access")

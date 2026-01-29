@@ -8,7 +8,8 @@ from handlers.viewing_orders import router as viewing_orders
 from handlers.edit_order import router as edit_order
 from handlers.edit_client import router as edit_client
 from handlers.admin import router as admin
-from handlers.search import router as search
+from handlers.search_client import router as search_client
+from handlers.search_order import router as search_order
 
 # from handlers.reports import router as reports
 
@@ -16,7 +17,8 @@ from handlers.search import router as search
 ALL_ROUTERS = [
     start,
     # menu,
-    search,
+    search_client,
+    search_order,
     workshop,
     new_order,
     viewing_orders,
