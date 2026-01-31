@@ -172,6 +172,55 @@ class OrderService:
 
 
 
+    async def search_order_pattern(self, field: str, search_term: str) -> list[dict]:
+        """
+        Универсальный поиск заказов
+        
+        Args:
+            field: Поле для поиска
+            search_term: Что ищем
+            exact: True для точного совпадения, False для частичного (LIKE)
+        """
+        query = f"SELECT * FROM orders WHERE LOWER({field}) LIKE LOWER($1)"
+        params = [f"%{search_term}%"]
+        
+        records = await self.db.fetch(query, *params)
+        return [dict(rec) for rec in records]
+
+
+
+    async def search_by_order_suffix(self, suffix: str) -> list[dict]:
+        """Поиск по последним цифрам номера заказа (17 → PD-2024-0017)"""
+        normalized = suffix.zfill(4)  # 17 → 0017
+        query = "SELECT * FROM orders WHERE order_number LIKE $1"
+        params = [f"%-{normalized}"]  # PD-2024-0017
+        
+        records = await self.db.fetch(query, *params)
+        return [dict(rec) for rec in records]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -2,10 +2,10 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
-from database.users import search_clients
-from handlers.edit_client import start_edit_client
+# from database.users import search_clients
+# from handlers.edit_client import start_edit_client
 from utils.formatters import format_date_nice, remove_emojis, extract_emoji, clean_user_input, parse_cost, add_days_from_text, format_telegram_username, format_phone
-from utils.parse import detect_search_field
+from utils.parse import detect_search_field_order
 # from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
@@ -78,43 +78,44 @@ async def get_patern_order(message: types.Message, state: FSMContext):
         else: await message.answer("🚫 Try to enter something to search for a order")
         return
 
-    # patern, clear_input = detect_search_field_order(imput_text)
-    # data_orders = await search_order(patern, clear_input)
+    patern, clear_input = detect_search_field_order(imput_text)
+    # print(patern, clear_input)
 
-    # if not data_orders:
-    #     if lang == "ru": await message.answer("🌀 Нет результатов")
-    #     else: await message.answer("🌀 No results")
-    #     return
+    if patern == "order_number_suffix":
+        data_orders = await order.search_by_order_suffix(clear_input)
+    else:
+        data_orders = await order.search_order_pattern(patern, clear_input)
+
+    # print(data_orders)
+
+    if not data_orders:
+        if lang == "ru": await message.answer("🌀 Нет результатов")
+        else: await message.answer("🌀 No results")
+        return
     
-#     for client in data_clients:
-#         customer_card = ""
+    for data_order in data_orders:
+        order_card = ""
 
-#         client_id = client.get("user_id")
-#         name = client.get("name")
-#         phone = format_phone(client.get("phone"))
-#         username_telegram = client.get("username_telegram")
+        order_number = data_order.get("order_number")
+        sn_imei = data_order.get("sn_imei")
+        status = data_order.get("status")
+        order_type = data_order.get("order_type")
 
-#         a_tip = client.get("a_tip")
-#         total_spent = client.get("total_spent")
-#         repair_count_total = client.get("repair_count_total")
-#         description_user = client.get("description_user")
-#         block = client.get("block")
-#         hum_quality = client.get("hum_quality")
-#         last_visit = client.get("last_visit")
-#         time_reg = client.get("time_reg")
+        device_type = data_order.get("device_type")
+        device_brand = data_order.get("device_brand")
+        device_model = data_order.get("device_model")
+        equipment = data_order.get("equipment")
+        problem = data_order.get("problem")
+        appearance = data_order.get("appearance")
+        created_date = data_order.get("created_date")
+        completion_date = data_order.get("completion_date")
 
-#         is_admin = client.get("is_admin")
-#         client_is_manager = client.get("is_manager")
-#         is_master = client.get("is_master")
+        diagnosis_before = data_order.get("diagnosis_before")
+        created_by = data_order.get("created_by")
 
-#         # orders_client = await order.get_orders_by_user(client_id)
 
-#         quality = HUMAN_QUALITY[lang].get(hum_quality) or ""
-#         hum_quality = remove_emojis(quality) or None
-#         ico_client = extract_emoji(quality) or "😐"
-
-#         if lang == "ru":
-#             customer_card = f"{ico_client} <b>{name}</b>\n"
+        if lang == "ru":
+            order_card = f"<b>{order_number}</b>\n"
 #             if username_telegram: customer_card += f"        {format_telegram_username(username_telegram)}\n"
 #             if phone: customer_card += f"        {phone}\n"
 
@@ -147,8 +148,8 @@ async def get_patern_order(message: types.Message, state: FSMContext):
 #             #     if net_profit: customer_card += f" • {net_profit}{CURRENCY}"
 #             #     customer_card += f" • {format_date_nice(created_date, lang)}\n"
 
-#         else:
-#             customer_card = f"<b>{ico_client} {name}</b>\n"
+        else:
+            order_card = f"<b>{order_number}</b>\n"
 #             if username_telegram: customer_card += f"        {format_telegram_username(username_telegram)}\n"
 #             if phone: customer_card += f"        {phone}\n"
 
@@ -182,16 +183,16 @@ async def get_patern_order(message: types.Message, state: FSMContext):
 #             #     customer_card += f" • {format_date_nice(created_date, lang)}\n"
 
 
-#         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-#             [
-#                 InlineKeyboardButton(text=f'{UI_TEXTS[lang]["open"]}', callback_data=f"open_client_{client_id}")
-#             ]
-#         ])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text=f'{UI_TEXTS[lang]["open"]}', callback_data=f"open_order_{order_number}")
+            ]
+        ])
         
 #         # print(f"open_client_{client_id}")
-#         await message.answer(customer_card, parse_mode="HTML", reply_markup=keyboard)
+        await message.answer(order_card, parse_mode="HTML", reply_markup=keyboard)
 
-#     return
+    return
 
 
 
