@@ -4,20 +4,17 @@ logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
 from database.users import search_clients
 from handlers.edit_client import start_edit_client
-from utils.formatters import format_date_nice, remove_emojis, extract_emoji, clean_user_input, parse_cost, add_days_from_text, format_telegram_username, format_phone
+from utils.formatters import format_date_nice, remove_emojis, extract_emoji, clean_user_input, format_telegram_username, format_phone
 from utils.parse import detect_search_field
-# from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-# from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-from config import CURRENCY, HUMAN_QUALITY, UI_TEXTS, CANCEL
+from config import HUMAN_QUALITY, UI_TEXTS, CANCEL
 from keyboards.workshop import build_keyboard
 from database import db
 from database.orders import OrderService
 import uuid
-# import json
 
 router = Router()
 order = OrderService(db)

@@ -5,11 +5,10 @@ logger = set_logger(name="admin")
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import DOWNLOAD, PATH_JSON, ADMIN_ID, PATH_LOGS #, DONE, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL
-from keyboards.workshop import build_keyboard
+from config import DOWNLOAD, ADMIN_ID, PATH_LOGS
 from database.create_tables import create_tables_in_db
 from database.deleted_tables_db import drop_all_tables_and_reset_schema
 from database.json_clients_db import get_json_clients_db, push_json_clients_in_db
@@ -17,12 +16,10 @@ from database.json_orders_db import get_json_orders_db, push_json_orders_in_db
 from database.migration_livesklad import parse_xls_get_json
 from database import db
 import os
-# import json
 import asyncio
 from pathlib import Path
-from io import StringIO, BytesIO
-# from datetime import datetime
-# from decimal import Decimal, InvalidOperation
+from io import BytesIO
+
 
 
 

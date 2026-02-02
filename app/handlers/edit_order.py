@@ -2,24 +2,23 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
+from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal
 from database.users import get_user_by_user_id, get_user_by_tg
 from utils.serialize import json_serializer, custom_json_decoder
 from handlers.edit_client import start_edit_client
+from handlers.actions_order import actions_order_tap
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import HUMAN_QUALITY, DONE, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL
+from config import HUMAN_QUALITY, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL, UI_TEXTS
 from keyboards.workshop import build_keyboard
 from database import db
 from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
-# import asyncio
 import json
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 
 
@@ -924,19 +923,7 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
 
 
@@ -944,7 +931,7 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
 ######### START EDIT ##############
 @router.message(Order.edit)
 async def process_edit_order(message: types.Message, state: FSMContext):
-    """ После нажатия кнопки Изменить на заказе, выбираем что менять 
+    """ После нажатия кнопки Открыть на заказе, выбираем что менять 
         заказ или данные клиента """
     await typing(message)
     state_data = await state.get_data()
@@ -974,20 +961,25 @@ async def process_edit_order(message: types.Message, state: FSMContext):
 ################# START ACTION #############
 @router.message(Order.action)
 async def process_action_order(message: types.Message, state: FSMContext):
-    """  """
+    """ Нажатие кнопки - Действия  заказа """
     await typing(message)
     state_data = await state.get_data()
     order_id = state_data.get("id")
     lang = message.from_user.language_code
 
-    if message.text == "📸 Фото":
-        await message.answer(f"Фотав по заказу нэту {order_id}")
-    elif message.text == "📄 PDF":
-        await message.answer(f"Тута пдф по заказу {order_id}")
-    elif message.text == "📤 Выдать заказ":
-        await message.answer(f"Выдаем заказа - {order_id}")
+    if message.text == UI_TEXTS[lang]["get_photo"]:
+        action = "photo"
+    elif message.text == UI_TEXTS[lang]["get_pdf"]:
+        action = "pdf"
+    elif message.text == UI_TEXTS[lang]["payd"]:
+        action = "payd"
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
+        return
+    
+    await actions_order_tap(order_id, action, message, state)
 
     
+# buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["cancel"]]
+# buttons = [UI_TEXTS[lang]["order"], UI_TEXTS[lang]["client"], UI_TEXTS[lang]["cancel"]]

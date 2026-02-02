@@ -227,42 +227,4 @@ class OrderService:
 
 
 
-
-    # async def edit_order(self, order_id: int, order_data: dict) -> bool:
-    #     """Обновить данные заказа по ID"""
-        
-    #     if not order_data:
-    #         return False
-        
-    #     set_parts = []
-    #     values = []
-        
-    #     for i, (key, value) in enumerate(order_data.items(), 1):
-    #         set_parts.append(f"{key} = ${i}")
-    #         values.append(value)
-        
-    #     values.append(order_id)
-    #     where_index = len(values)  # номер плейсхолдера для WHERE
-        
-    #     query = f"""
-    #         UPDATE orders 
-    #         SET {', '.join(set_parts)}
-    #         WHERE id = ${where_index}
-    #     """
-        
-    #     try:
-    #         await self.db.execute(query, *values)
-    #         return True
-    #     except Exception as e:
-    #         logger.error(f"Error updating order {order_id}: {e}")
-    #         return False
-
-
-
-    # if not records:  # список пустой
-    #     return {}
-    
-    # # Берём первый Record и преобразуем в dict
-    # first_record = records[0]
-    # return dict(first_record)
     

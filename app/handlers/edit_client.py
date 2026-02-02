@@ -2,25 +2,18 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
-from database.users import get_user_by_user_id, edit_client, get_user_by_tg
-from utils.serialize import json_serializer, custom_json_decoder
+from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username
+from database.users import get_user_by_user_id, edit_client
 from handlers.new_order import create_order
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
 from config import UI_TEXTS, CURRENCY, HUMAN_QUALITY
 from keyboards.workshop import build_keyboard
 from database import db
-# from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
-# import asyncio
 import uuid
-import json
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
 
 
 

@@ -4,12 +4,9 @@ logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
 from aiogram import Router, types, F
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
-# from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-# from keyboards import wskey
 from keyboards.workshop import build_keyboard
-from config import CANCEL, ORDER, UI_TEXTS
+from config import UI_TEXTS
 
 
 

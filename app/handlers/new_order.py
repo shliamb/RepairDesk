@@ -2,23 +2,18 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
-from database.users import add_user, get_user_by_tg, get_user_by_user_id
+from database.users import add_user, get_user_by_tg
 from utils.formatters import parse_cost, add_days_from_text, format_telegram_username
 from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup
+from aiogram.types import ReplyKeyboardRemove
 from config import get_brands, UI_TEXTS, COST_DIAGNOSTIC, DIAGNOSTIC_TIME, DEVICES_RU, DEVICES_EN, EQUIPMENT, MISS, DONE, OWN_VERSION, PROBLEMS, CANCEL, ORDER, CLIENT, TYPE_ORDER, APPEARANCE
 from keyboards.workshop import build_keyboard
-# from datetime import datetime, timedelta
-import re
-# from common import day_utcnow
 from database import db
 from database.orders import OrderService
 from pdf.gen_pdf import BuildPDF
-# from decimal import Decimal
 import uuid
 import json
 

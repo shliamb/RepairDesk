@@ -122,6 +122,12 @@ UI_TEXTS = {
         "stat": "📊 Статистика",
         "activ_orders": "📋 Активные заказы",
         "in_work_orders": "🔧 В работе",
+        "get_photo": "📸 Фото",
+        "get_pdf": "📄 PDF",
+        "payd": "📤 Выдать заказ",
+        "order": "📋 Заказ",
+        "client": "🙋 Клиент",
+        "status": "📊 Статус"
     },
     "en": {
         "yes": "👍 Yes", 
@@ -144,6 +150,12 @@ UI_TEXTS = {
         "stat": "📊 Statistics",
         "activ_orders": "📋 Active orders",
         "in_work_orders": "🔧 In progress",
+        "get_photo": "📸 Photo",
+        "get_pdf": "📄 PDF",
+        "payd": "📤 Hand Over",
+        "order": "📋 Order",
+        "client": "🙋 Client",
+        "status": "📊 Status"
     },
 }
 
@@ -170,7 +182,7 @@ DIAGNOSTIC_TIME = {"ru": ["Без диагностики", "1 день", "2 дн
 COST_DIAGNOSTIC = {"ru": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"], "en": ["1000 RUB", "0 RUB", "2000 RUB", "2500 RUB"]}
 VIEW_ORDER = {"change_ru": "📂 Открыть", "change_en": "📂 Open", "action_ru": "⚡ Действия", "action_en": "⚡ Actions"}
 CHANGE_ORDER = {"order_ru": "📋 Заказ", "order_en": "📋 Order", "client_ru": "🙋 Клиент", "client_en": "🙋 Client", "status_ru": "📊 Статус", "status_en": "📊 Status"}
-ACTION_ORDER = {"get_photo_ru": "📸 Фото", "get_photo_en": "📸 Photo", "get_pdf_ru": "📄 PDF", "get_pdf_en": "📄 PDF", "issue_ru": "📤 Выдать заказ", "issue_en": "📤 Issue an order"}
+ACTION_ORDER = {"get_photo_ru": "📸 Фото", "get_photo_en": "📸 Photo", "get_pdf_ru": "📄 PDF", "get_pdf_en": "📄 PDF", "issue_ru": "📤 Выдать заказ", "issue_en": "📤 Hand Over"}
 
 LAPTOP_BRANDS = ["Asus", "Lenovo", "HP", "Dell", "Acer", "Apple", "MSI", "Toshiba", "Sony", "LG", "Microsoft", "Fujitsu", "Alienware", "Razer", "DEXP", "IRU", "Huawei", "Xiaomi", "Honor", "Samsung", "Prestigio", "DNS"]
 PHONE_BRANDS = ["Samsung", "Apple", "Xiaomi", "Huawei", "Honor", "Realme", "Vivo", "Oppo", "OnePlus", "Nokia", "Sony", "Google", "ZTE", "Motorola", "Alcatel", "Philips", "Texet", "BQ", "Meizu", "Asus"]

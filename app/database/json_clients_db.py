@@ -8,7 +8,6 @@ from utils.serialize import json_serializer, json_decoder
 from database import db
 import json
 import os
-import asyncio
 
 
 

@@ -9,7 +9,6 @@ import pandas as pd
 from database import db
 import json
 import os
-import asyncio
 
 
 

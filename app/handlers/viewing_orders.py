@@ -5,16 +5,13 @@ logger = set_logger(name="handlers")
 from utils.formatters import format_date_nice
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-# from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
 from config import ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
-    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU, ORDER_STATUS
+    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU, ORDER_STATUS, UI_TEXTS
 from keyboards.workshop import build_keyboard
 from database import db
-# from decimal import Decimal
-# import asyncio
 import json
 
 
@@ -116,14 +113,14 @@ async def edit_order(callback: types.CallbackQuery, state: FSMContext):
     else: logger.error(f"{id} is not digit")
     #await callback.message.answer(f"Редактируем заказ {id}")
     # await callback.message.answer(f"process_edit_order_{id}", parse_mode=None)
-    if lang == "ru": buttons = [CHANGE_ORDER["order_ru"], CHANGE_ORDER["client_ru"], CANCEL["ru"]] # CHANGE_ORDER["status_ru"],
-    else: buttons = [CHANGE_ORDER["order_en"], CHANGE_ORDER["client_en"], CANCEL["en"]] # CHANGE_ORDER["status_en"],
+    buttons = [UI_TEXTS[lang]["order"], UI_TEXTS[lang]["client"], UI_TEXTS[lang]["cancel"]]
     if lang == "ru": intro_text = f"Выберите действие по заказу:"
     else: intro_text = f"Select the order action:"
     await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
     await state.update_data(id=id)
     await state.set_state(Order.edit)
     await callback.answer()
+
 
 
 # ACTION ORDER
@@ -134,10 +131,9 @@ async def action_order(callback: types.CallbackQuery, state: FSMContext):
     id = callback.data.split("_")[-1]
     if not isinstance(id, int): id = int(id)
     else: logger.error(f"{id} is not digit")
-    if lang == "ru": buttons = [ACTION_ORDER["get_photo_ru"], ACTION_ORDER["get_pdf_ru"], ACTION_ORDER["issue_ru"], CANCEL["ru"]]
-    else: buttons = [ACTION_ORDER["get_photo_en"], ACTION_ORDER["get_pdf_en"], ACTION_ORDER["issue_en"], CANCEL["en"]]
-    if lang == "ru": intro_text = f"Выберите ействие по заказу {id}:"
-    else: intro_text = f"Select the product by order {id}:"
+    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["cancel"]]
+    if lang == "ru": intro_text = f"Выберите действие по заказу:"
+    else: intro_text = f"Select the order action:"
     await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
     await state.update_data(id=id)
     await state.set_state(Order.action)

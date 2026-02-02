@@ -10,6 +10,7 @@ from handlers.edit_client import router as edit_client
 from handlers.admin import router as admin
 from handlers.search_client import router as search_client
 from handlers.search_order import router as search_order
+from handlers.actions_order import router as actions_order
 
 # from handlers.reports import router as reports
 
@@ -17,6 +18,7 @@ from handlers.search_order import router as search_order
 ALL_ROUTERS = [
     start,
     # menu,
+    actions_order,
     search_client,
     search_order,
     workshop,

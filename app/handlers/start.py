@@ -11,7 +11,6 @@ from database.users import add_user, get_user_by_tg
 from utils.formatters import format_telegram_username
 from handlers.common import typing
 from datetime import datetime
-# from common import day_utcnow
 import uuid
 import random
 

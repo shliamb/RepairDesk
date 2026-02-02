@@ -8,7 +8,6 @@ from database.orders import OrderService
 from database import db
 import json
 import os
-import asyncio
 
 
 orders = OrderService(db)
