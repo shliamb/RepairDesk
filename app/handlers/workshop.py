@@ -40,7 +40,7 @@ async def workshop_panel(message: types.Message, state: FSMContext):
         # UI_TEXTS[lang]["in_work_orders"], 
         UI_TEXTS[lang]["ready_orders"], 
         UI_TEXTS[lang]["last_orders"], 
-        UI_TEXTS[lang]["stat"],
+        # UI_TEXTS[lang]["stat"],
         UI_TEXTS[lang]["cancel"]
     ])
 

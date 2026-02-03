@@ -151,3 +151,14 @@ def detect_search_field_order(text: str) -> tuple[str, str]:
     # 5. По умолчанию - проблема
     return 'problem', text[:100]
 
+
+
+
+def is_number(text: str) -> bool:
+    """Проверяет, что строка - число (int или float)"""
+    try:
+        float(text.replace(',', '.'))
+        return True
+    except ValueError:
+        return False
+

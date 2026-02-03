@@ -127,7 +127,11 @@ UI_TEXTS = {
         "payd": "📤 Выдать заказ",
         "order": "📋 Заказ",
         "client": "🙋 Клиент",
-        "status": "📊 Статус"
+        "status": "📊 Статус",
+        "card": "💳 Перевод",
+        "cash": "💵 Наличность",
+        "crypto": "₿ Крипта",
+        "no_payment": "🆓 Без оплаты"
     },
     "en": {
         "yes": "👍 Yes", 
@@ -155,10 +159,14 @@ UI_TEXTS = {
         "payd": "📤 Hand Over",
         "order": "📋 Order",
         "client": "🙋 Client",
-        "status": "📊 Status"
+        "status": "📊 Status",
+        "card": "💳 Card / Transfer",
+        "cash": "💵 Cash",
+        "crypto": "₿ Crypto",
+        "no_payment": "🆓 No payment"
+
     },
 }
-
 
 
 
