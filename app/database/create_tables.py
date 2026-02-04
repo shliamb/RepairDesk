@@ -28,7 +28,7 @@ def create_tables_in_db():
             
             phone VARCHAR(20) UNIQUE,
             email VARCHAR(100) UNIQUE,
-            name VARCHAR(50),
+            name VARCHAR(50) NOT NULL,
 
             a_tip DECIMAL(10, 2),                                                               -- Чаевые от клиента сумма за все время
             total_spent DECIMAL(10, 2),                                                         -- Потратил клиент на ремонты за все время
@@ -108,6 +108,7 @@ def create_tables_in_db():
             edit_history JSONB,                                                                 -- Позже можно цепочку изменнений вносить, кто и когда менял
             
             comments TEXT,                                                                      -- Комментарии по ремонту
+            time_spent_on_repairs FLOAT,                                                        -- Примерное время затраченное мастером на ремонт (позже можно будет определять самый выгодный вид ремонта)
 
             FOREIGN KEY (client_id) REFERENCES users(user_id)
         );
@@ -117,6 +118,32 @@ def create_tables_in_db():
             CREATE INDEX IF NOT EXISTS idx_orders_serial ON orders(sn_imei);
         '''
         cursor.execute(create_table_orders)
+
+
+        create_table_fin_stats = '''
+        CREATE TABLE IF NOT EXISTS fin_stats (
+            payment_id SERIAL PRIMARY KEY,
+            order_id INTEGER REFERENCES orders(id),                                             -- Порядковый id заказа
+            client_id UUID REFERENCES users(user_id),                                           -- UUID клиента
+            master_id UUID REFERENCES users(user_id),                                           -- UUID мастера
+            
+            payment_amount DECIMAL(10,2) NOT NULL,                                              -- Сумма оплаты (полная)
+            net_profit DECIMAL(10,2) NOT NULL,                                                  -- Чистая* прибыль с ремонта (ремонт - запчасти)
+            payment_method VARCHAR(20) NOT NULL,                                                -- Способ оплаты 'card', 'cash', 'crypto', 'free'
+            
+            payment_date TIMESTAMP DEFAULT NOW(),                                               -- Когда оплатили
+            order_created_date TIMESTAMP,                                                       -- Когда создан заказ (дублируем для аналитики)
+            order_completed_date TIMESTAMP,                                                     -- Когда завершён
+            
+            device_type VARCHAR(50),                                                            -- Тип устройства (phone/laptop)
+            device_model VARCHAR(100),                                                          -- Модель
+            repair_type VARCHAR(50)
+
+        );
+
+        '''
+        cursor.execute(create_table_fin_stats)
+
 
 
         # Saving changes:

@@ -3,9 +3,13 @@ from logs.set_logger import set_logger
 logger = set_logger(name="jsonCli")
 from config import PATH_JSON
 from datetime import datetime
+from decimal import Decimal
 from utils.serialize import json_serializer, json_decoder
+from utils.formatters import format_phone
+from database.users import get_user_by_phone, get_user_by_user_id, edit_client
 from database.orders import OrderService
 from database import db
+import uuid
 import json
 import os
 
@@ -106,7 +110,7 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
 
                 "path_photo": order.get("path_photo"),
                 
-                "client_id": json_decoder(order.get("client_id")),
+                "client_id": json_decoder(order.get("client_id")),  # UUID
                 "real_name_client": order.get("real_name_client"),
                 
                 "created_by": json_decoder(order.get("created_by")),
@@ -120,11 +124,60 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
             }
 
             try:
+                # Поиск клиента в базе для привязки заказа:
+                client_id: str = order.get("client_id")
+                if client_id: client_id: uuid = json_decoder(client_id)
+                
+                phone: str = order.get("phone") # от livesklad для Join 
+                if phone: phone = format_phone(phone)
+
+                net_profit: Decimal = json_decoder(order.get("net_profit")) or 0
+
+                tips: Decimal = json_decoder(order.get("tips")) or 0
+
+                status: str = order.get("status")
+
+                if not client_id and phone:
+                    data_user = await get_user_by_phone(phone)
+                    if data_user:
+                        client_id = json_decoder(data_user.get("user_id"))
+                        order_data["client_id"] = client_id
+
+                elif not client_id and not phone:
+                    print("Клиент не обнаружен в базе. Первым добавляем пользователей. Без пользователя нет смысла добавлять заказ.")
+                    bad_case += 1
+                    continue
+
                 #print(order_data, "\n")
                 order_number = await orders.create_order(order_data)
                 if order_number:
                     print(order_number)
                     good_case += 1
+
+                    if status != "issued":
+                        continue
+
+                    # Сбор обновленных данных клиента
+                    old_data_user = await get_user_by_user_id(client_id)
+                    total_spent: Decimal = json_decoder(old_data_user.get("total_spent")) or 0
+                    repair_count_total: int  = json_decoder(old_data_user.get("repair_count_total")) or 0
+                    a_tip: Decimal = json_decoder(old_data_user.get("a_tip")) or 0
+                    
+
+                    client_update_data = {
+                        "user_id": client_id,
+                        "total_spent": total_spent + net_profit,
+                        "repair_count_total": repair_count_total + 1,
+                        "a_tip": a_tip + tips
+                    }
+
+                    # Сохранение данных клиента
+                    if not await edit_client(client_update_data):
+                        print("Error ошибка обновления данных клиента")
+                    
+                    print("client_update_data:", client_update_data)
+
+
                 else:
                     bad_case += 1
 
@@ -134,5 +187,7 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
 
         print("good_case orders:", good_case, "bad_case orders:", bad_case)
 
-        if bad_case == 0 and good_case > 0: return good_case, bad_case
-        else: return False, False
+        return good_case, bad_case
+
+        # if bad_case == 0 and good_case > 0: return good_case, bad_case
+        # else: return False, False

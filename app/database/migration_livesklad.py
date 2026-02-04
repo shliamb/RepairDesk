@@ -63,13 +63,14 @@ async def parse_xls_get_json(filepath: str) -> tuple:
             "name": row['Имя'],
             "phone": row['Телефон'],
             "real_name": row['Имя'],
-            "total_spent": 0,
-            "repair_count_total": 0
+            "total_spent": None,
+            "repair_count_total": None
         }
 
         json_users_data.append(user_data)
 
         order_data = {
+            "phone": row['Телефон'],
             "sn_imei": row['Серийный номер / IMEI'],
             "status": "issued", #row['Статус'],
             "order_type": "paid", # row['Тип заказа'],

@@ -101,3 +101,23 @@ async def search_clients(field: str, search_term: str, exact_match: bool = False
     
     records = await db.fetch(query, *params)
     return [dict(rec) for rec in records]
+
+
+
+async def get_user_by_phone(phone: str) -> dict:
+    """Найти пользователя по телефону"""
+    query = "SELECT * FROM users WHERE phone = $1"
+    record = await db.fetchrow(query, phone)
+    if record:
+        return dict(record)
+    return {}
+
+
+
+async def get_user_by_telegram_name(telegram_name: str) -> dict:
+    """Найти пользователя по telegram name"""
+    query = "SELECT * FROM users WHERE username_telegram = $1"
+    record = await db.fetchrow(query, telegram_name)
+    if record:
+        return dict(record)
+    return {}
