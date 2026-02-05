@@ -6,11 +6,14 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from keyboards.workshop import build_keyboard
-from config import UI_TEXTS
+from database.orders import OrderService
+from database import db
+from config import UI_TEXTS, READY_STATUSES, NEW, COMPLETED_STATUSES, IN_PROGRESS_STATUSES
 
 
 
 router = Router()
+order = OrderService(db)
 
 
 # WORKSHOP
@@ -33,45 +36,24 @@ async def workshop_panel(message: types.Message, state: FSMContext):
     else:
         desc_text = "⚙️ Select an action:"
 
+
+    ready = await order.count_orders_by_statuses(READY_STATUSES)
+    new = await order.count_orders_by_statuses(NEW)
+    complet = await order.count_orders_by_statuses(COMPLETED_STATUSES)
+    in_progress = await order.count_orders_by_statuses(IN_PROGRESS_STATUSES)
+
+
+
     buttons.extend([
         UI_TEXTS[lang]["new_order"], 
         UI_TEXTS[lang]["serch_order"], 
-        # UI_TEXTS[lang]["activ_orders"], 
-        # UI_TEXTS[lang]["in_work_orders"], 
-        UI_TEXTS[lang]["ready_orders"], 
+        f"{UI_TEXTS[lang]['new_orders']} {new}", 
+        f"{UI_TEXTS[lang]['in_work']} {in_progress}",
         UI_TEXTS[lang]["last_orders"], 
-        # UI_TEXTS[lang]["stat"],
+        f"{UI_TEXTS[lang]['ready_orders']} {ready}",
+        f"{UI_TEXTS[lang]['issued']} {complet}", 
         UI_TEXTS[lang]["cancel"]
     ])
 
     await message.answer(desc_text, reply_markup = build_keyboard(buttons)) 
      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# @router.message(F.text == "📝 Новый заказ")
-# async def new_order(message: types.Message): #, state: FSMContext):
-#     """ Новый заказ """
-#     await message.answer(
-#         "Выберите тип устройства:",
-#         reply_markup = build_keyboard(["💻 Ноутбук", "🖥 ПК", "Планшет", "Видеокарта", "Материнка", "🎮 Приставка", "Процессор", "Акустика"]) # стоит вынести для удобства
-#     )

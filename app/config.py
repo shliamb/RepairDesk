@@ -60,8 +60,8 @@ ORDER_STATUS = {
 
 # Активные = все кроме ready, completed, canceled, rejected
 NEW = ["new"]
-ACTIVE_STATUSES = ["new", "diagnosis", "repair", "waiting_parts", "waiting_decision", "testing", "ready", "issued_not_paid"]
-IN_PROGRESS_STATUSES = ["testing", "repair", "diagnostics", "waiting_parts"]
+# ACTIVE_STATUSES = ["new", "diagnosis", "repair", "waiting_parts", "waiting_decision", "testing", "ready", "issued_not_paid"]
+IN_PROGRESS_STATUSES = ["testing", "repair", "diagnostics", "waiting_parts", "waiting_decision"]
 READY_STATUSES = ["ready", "paid_not_issued"]
 COMPLETED_STATUSES = ["issued"]
 
@@ -116,12 +116,13 @@ UI_TEXTS = {
         "serch_cli": "🔎 Найти клиента",
         "serch_order": "🔎 Найти заказ",
         "open": "📂 Открыть",
-        "new_order": "📝 Новый заказ",
+        "new_order": "📝 Создать заказ",
         "ready_orders": "✅ Готовые",
         "last_orders": "📋 Последние 30",
+        "new_orders": "📥 Новые заказы",
+        "issued": "📅 Выданные",
+        "in_work": "⚙️ В работе",
         "stat": "📊 Статистика",
-        "activ_orders": "📋 Активные заказы",
-        "in_work_orders": "🔧 В работе",
         "get_photo": "📸 Фото",
         "get_pdf": "📄 PDF",
         "payd": "📤 Выдать заказ",
@@ -151,9 +152,10 @@ UI_TEXTS = {
         "new_order": "📝 New order",
         "ready_orders": "✅ Ready",
         "last_orders": "📋 Last 30",
+        "new_orders": "📥 New orders",
+        "issued": "📅 Issued",
+        "in_work": "⚙️ In progress",
         "stat": "📊 Statistics",
-        "activ_orders": "📋 Active orders",
-        "in_work_orders": "🔧 In progress",
         "get_photo": "📸 Photo",
         "get_pdf": "📄 PDF",
         "payd": "📤 Hand Over",

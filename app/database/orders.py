@@ -163,6 +163,7 @@ class OrderService:
             return False
 
 
+
     async def get_all_orders(self) -> list[dict]:
         """Получить все заказы"""
         query = f"SELECT * FROM orders"
@@ -197,6 +198,19 @@ class OrderService:
         
         records = await self.db.fetch(query, *params)
         return [dict(rec) for rec in records]
+    
+
+
+    async def count_orders_by_statuses(self, statuses: list) -> int:
+        """Получить количество заказов по статусам (быстрее чем SELECT *)"""
+        if not statuses:
+            return 0
+        
+        placeholders = ', '.join([f'${i+1}' for i in range(len(statuses))])
+        query = f"SELECT COUNT(*) FROM orders WHERE status IN ({placeholders})"
+        
+        count = await self.db.fetchval(query, *statuses)  # fetchval возвращает одно значение
+        return count or 0
 
 
 

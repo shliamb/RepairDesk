@@ -8,7 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import ACTIVE_STATUSES, CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
+from config import CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
     CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU, ORDER_STATUS, UI_TEXTS
 from keyboards.workshop import build_keyboard
 from database import db
@@ -140,21 +140,21 @@ async def action_order(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# START GET ACTIVE ORDERS
-@router.message((F.text == ORDER["activ_ru"]) | (F.text == ORDER["activ_en"]))
-async def get_active_orders(message: types.Message):#, state: FSMContext):
-    """ Показать активные заказы """
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
+# # START GET ACTIVE ORDERS
+# @router.message((F.text == ORDER["activ_ru"]) | (F.text == ORDER["activ_en"]))
+# async def get_active_orders(message: types.Message):#, state: FSMContext):
+#     """ Показать активные заказы """
+#     await typing(message)
+#     lang = message.from_user.language_code
+#     user_id = message.from_user.id
+#     if not await is_manager(user_id):
+#         logger.error(f"{user_id} You don't have access")
+#         await message.answer("🔐 You don't have access")
+#         return
     
-    # Собрать Активные Заказы из базы
-    records = await order.get_orders_by_statuses(ACTIVE_STATUSES)
-    await push_orders_bot(message, lang, records)
+#     # Собрать Активные Заказы из базы
+#     records = await order.get_orders_by_statuses(ACTIVE_STATUSES)
+#     await push_orders_bot(message, lang, records)
 
 
 # START GET IN PROGRESS ORDERS
@@ -174,8 +174,16 @@ async def get_inprogress_orders(message: types.Message):#, state: FSMContext):
     await push_orders_bot(message, lang, records)
 
 
+# @router.message(
+#     F.text.startswith(UI_TEXTS["ru"]["ready_orders"]) | 
+#     F.text.startswith(UI_TEXTS["en"]["ready_orders"])
+# )
+
 # START GET READY ORDERS
-@router.message((F.text == ORDER["ready_ru"]) | (F.text == ORDER["ready_en"]))
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["ready_orders"]) | 
+    F.text.startswith(UI_TEXTS["en"]["ready_orders"])
+)
 async def get_ready_orders(message: types.Message):#, state: FSMContext):
     """ Показать готовые заказы """
     await typing(message)
@@ -189,6 +197,8 @@ async def get_ready_orders(message: types.Message):#, state: FSMContext):
     # Собрать Готовые Заказы из базы
     records = await order.get_orders_by_statuses(READY_STATUSES)
     await push_orders_bot(message, lang, records)
+
+
 
 
 # GET LAST 30 ORDERS
@@ -208,19 +218,19 @@ async def get_last(message: types.Message):#, state: FSMContext):
     await push_orders_bot(message, lang, records)
 
 
-# START GET STATISTICS ORDERS
-@router.message((F.text == ORDER["stat_ru"]) | (F.text == ORDER["stat_en"]))
-async def get_statistic(message: types.Message):#, state: FSMContext):
-    """ Показать статистику """
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
+# # START GET STATISTICS ORDERS
+# @router.message((F.text == ORDER["stat_ru"]) | (F.text == ORDER["stat_en"]))
+# async def get_statistic(message: types.Message):#, state: FSMContext):
+#     """ Показать статистику """
+#     await typing(message)
+#     lang = message.from_user.language_code
+#     user_id = message.from_user.id
+#     if not await is_manager(user_id):
+#         logger.error(f"{user_id} You don't have access")
+#         await message.answer("🔐 You don't have access")
+#         return
     
-    stats = await db.get_pool_stats()
-    print(f"Статистика: {json.dumps(stats, indent=2)}")
-    await message.answer(f"Статистика: total: {stats}", parse_mode=None)
-    # await message.answer(f"Статистика: total: {stats.get("total")}, used: {stats.get("used")}, idle: {stats.get("idle")}, percent_used: {stats.get("percent_used")}")
+#     stats = await db.get_pool_stats()
+#     print(f"Статистика: {json.dumps(stats, indent=2)}")
+#     await message.answer(f"Статистика: total: {stats}", parse_mode=None)
+#     # await message.answer(f"Статистика: total: {stats.get("total")}, used: {stats.get("used")}, idle: {stats.get("idle")}, percent_used: {stats.get("percent_used")}")
