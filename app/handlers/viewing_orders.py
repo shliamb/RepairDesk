@@ -9,7 +9,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
 from config import CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
-    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU, ORDER_STATUS, UI_TEXTS
+    CURRENCY, VIEW_ORDER, CHANGE_ORDER, ACTION_ORDER, ORDER_STATUS_RU, ORDER_STATUS, UI_TEXTS, COMPLETED_STATUSES, NEW
 from keyboards.workshop import build_keyboard
 from database import db
 import json
@@ -28,23 +28,29 @@ class Order(StatesGroup):
 
 
 
-# OUTPUTTING ORDERS TO THE TELEGRAMM BOT
-async def push_orders_bot(message: types.Message, lang: str, records: list):
-    """ Вывод заказов в телеграмм боте.
-    
-        Для работы с заказами использую 
-        id (id SERIAL PRIMARY KEY) - это 
-        быстре и проще для внутренней работы, 
-        для клиента - order_number """
+async def push_orders_bot(
+    message: types.Message, 
+    lang: str, 
+    records: list,
+    offset: int = 0,
+    page_size: int = 5
+):
+    """Вывод заказов с пагинацией"""
     
     if not records:
-        if lang == "ru": await message.answer("Заказов нет")
-        else: await message.answer("There are no orders")
+        if lang == "ru": 
+            await message.answer("Заказов нет")
+        else: 
+            await message.answer("There are no orders")
         return
-
-
-    for one in records:
-
+    
+    # Вычисляем, сколько осталось записей после текущей страницы
+    total_records = len(records)
+    end_index = min(offset + page_size, total_records)
+    
+    # Выводим только текущую страницу
+    for i in range(offset, end_index):
+        one = records[i]
         order = ""
         id = one.get("id")
         order_number = one.get("order_number")
@@ -90,17 +96,137 @@ async def push_orders_bot(message: types.Message, lang: str, records: list):
             if total:
                 order += f'   <b>TOTAL: {total:,.0f} {CURRENCY}</b>'
         
-
-
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [
-                InlineKeyboardButton(text=f'{VIEW_ORDER["change_ru"] if lang == "ru" else VIEW_ORDER["change_en"]}', callback_data=f"edit_order_{id}"),
-                InlineKeyboardButton(text=f'{VIEW_ORDER["action_ru"] if lang == "ru" else VIEW_ORDER["action_en"]}', callback_data=f"action_order_{id}")
+                InlineKeyboardButton(
+                    text=VIEW_ORDER["change_ru"] if lang == "ru" else VIEW_ORDER["change_en"], 
+                    callback_data=f"edit_order_{one.get('id')}"
+                ),
+                InlineKeyboardButton(
+                    text=VIEW_ORDER["action_ru"] if lang == "ru" else VIEW_ORDER["action_en"], 
+                    callback_data=f"action_order_{one.get('id')}"
+                )
             ]
         ])
         
         await message.answer(order, parse_mode="HTML", reply_markup=keyboard)
-        #await asyncio.sleep(0.1)
+    
+    # Если есть ещё записи - добавляем кнопку "Ещё"
+    if end_index < total_records:
+        remaining = total_records - end_index
+        
+        load_more_btn = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text=f"📥 {f'Ещё {remaining}' if lang == 'ru' else f'Load {remaining}'}",
+                callback_data=f"load_more_orders_{end_index}"
+            )
+        ]])
+        
+        await message.answer(
+            f"📄 {end_index}/{total_records}" + 
+            (f"\nЗагрузить ещё {remaining}?" if lang == "ru" else f"\nLoad {remaining} more?"),
+            reply_markup=load_more_btn
+        )
+
+
+# Обработчик кнопки "Ещё"
+@router.callback_query(F.data.startswith("load_more_orders_"))
+async def load_more_orders(callback: types.CallbackQuery):
+    offset = int(callback.data.split("_")[-1])
+    
+    # Получаем записи заново или из FSM
+    # Например, если хранили в FSM:
+    state_data = await callback.message.bot.get_state(callback.from_user.id)
+    records = state_data.get("orders_list", [])
+    
+    # Удаляем предыдущее сообщение с кнопкой "Ещё"
+    await callback.message.delete()
+    
+    # Выводим следующую страницу
+    await push_orders_bot(
+        message=callback.message,
+        lang=callback.from_user.language_code,
+        records=records,
+        offset=offset,
+        page_size=30
+    )
+    
+    await callback.answer()
+
+
+# # OUTPUTTING ORDERS TO THE TELEGRAMM BOT
+# async def push_orders_bot(message: types.Message, lang: str, records: list):
+#     """ Вывод заказов в телеграмм боте.
+    
+#         Для работы с заказами использую 
+#         id (id SERIAL PRIMARY KEY) - это 
+#         быстре и проще для внутренней работы, 
+#         для клиента - order_number """
+    
+#     if not records:
+#         if lang == "ru": await message.answer("Заказов нет")
+#         else: await message.answer("There are no orders")
+#         return
+
+
+#     for one in records:
+
+#         order = ""
+#         id = one.get("id")
+#         order_number = one.get("order_number")
+#         order_type = one.get("order_type")
+#         device_type = one.get("device_type")
+#         device_brand = one.get("device_brand")
+#         device_model = one.get("device_model") or ""
+#         real_name_client = one.get("real_name_client")
+#         # real_name_created = one.get("real_name_created")
+#         problem = json.loads(one.get("problem")) if one.get("problem") else ""
+#         problem = ", ".join(problem.copy())
+#         status = one.get("status")
+#         created_date = one.get("created_date")
+#         created_date = format_date_nice(created_date, lang)
+#         diagnosis_before = one.get("diagnosis_before")
+#         diagnosis_before = format_date_nice(diagnosis_before, lang)
+#         # cost_diagnostics = int(one.get("cost_diagnostics")) or 0
+#         cost_repair = one.get("cost_repair") or 0
+#         cost_of_parts = one.get("cost_of_parts") or 0
+#         total = float(cost_repair) + float(cost_of_parts)
+
+#         if lang == "ru":
+#             order = (
+#                 f'<b>📋 {order_number}</b>{" • Гарантия" if order_type == "guarant" else ""} • {ORDER_STATUS_RU.get(status)}\n\n'
+#                 f'   • <b>{real_name_client}</b>\n'
+#                 f'   • <b>{device_type}</b> {device_brand} {device_model}\n'
+#                 f'   • до {diagnosis_before}\n\n'
+#                 f'   • {problem}\n\n'
+#             )
+
+#             if total:
+#                 order += f'   <b>ИТОГО: {total:,.0f} {CURRENCY}</b>'
+
+#         else:
+#             order = (
+#                 f'<b>📋 {order_number}</b>{" • Guaranty" if order_type == "guarant" else ""} • {ORDER_STATUS.get(status)}\n\n'
+#                 f'   • <b>{real_name_client}</b>\n'
+#                 f'   • <b>{device_type}</b> {device_brand} {device_model}\n'
+#                 f'   • until {diagnosis_before}\n\n'
+#                 f'   • {problem}\n\n'
+#             )
+
+#             if total:
+#                 order += f'   <b>TOTAL: {total:,.0f} {CURRENCY}</b>'
+        
+
+
+#         keyboard = InlineKeyboardMarkup(inline_keyboard=[
+#             [
+#                 InlineKeyboardButton(text=f'{VIEW_ORDER["change_ru"] if lang == "ru" else VIEW_ORDER["change_en"]}', callback_data=f"edit_order_{id}"),
+#                 InlineKeyboardButton(text=f'{VIEW_ORDER["action_ru"] if lang == "ru" else VIEW_ORDER["action_en"]}', callback_data=f"action_order_{id}")
+#             ]
+#         ])
+        
+#         await message.answer(order, parse_mode="HTML", reply_markup=keyboard)
+#         #await asyncio.sleep(0.1)
 
 
 # EDIT ORDER
@@ -140,26 +266,63 @@ async def action_order(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# # START GET ACTIVE ORDERS
-# @router.message((F.text == ORDER["activ_ru"]) | (F.text == ORDER["activ_en"]))
-# async def get_active_orders(message: types.Message):#, state: FSMContext):
-#     """ Показать активные заказы """
-#     await typing(message)
-#     lang = message.from_user.language_code
-#     user_id = message.from_user.id
-#     if not await is_manager(user_id):
-#         logger.error(f"{user_id} You don't have access")
-#         await message.answer("🔐 You don't have access")
-#         return
+
+
+
+
+
+
+
+# START GET NEW
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["new_orders"]) | 
+    F.text.startswith(UI_TEXTS["en"]["new_orders"])
+)
+async def get_new(message: types.Message):#, state: FSMContext):
+    """ Показать заказы в работе"""
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
     
-#     # Собрать Активные Заказы из базы
-#     records = await order.get_orders_by_statuses(ACTIVE_STATUSES)
-#     await push_orders_bot(message, lang, records)
+    # Собрать в процессе Заказы из базы
+    records = await order.get_orders_by_statuses(NEW)
+    await push_orders_bot(message, lang, records)
+
+
+
+
+# START GET ISSUED
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["issued"]) | 
+    F.text.startswith(UI_TEXTS["en"]["issued"])
+)
+async def get_issued(message: types.Message):#, state: FSMContext):
+    """ Показать заказы в работе"""
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+    
+    # Собрать в процессе Заказы из базы
+    records = await order.get_orders_by_statuses(COMPLETED_STATUSES)
+    await push_orders_bot(message, lang, records)
+
+
 
 
 # START GET IN PROGRESS ORDERS
-@router.message((F.text == ORDER["in_work_ru"]) | (F.text == ORDER["in_work_en"]))
-async def get_inprogress_orders(message: types.Message):#, state: FSMContext):
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["in_work"]) | 
+    F.text.startswith(UI_TEXTS["en"]["in_work"])
+)
+async def get_in_work(message: types.Message):#, state: FSMContext):
     """ Показать заказы в работе"""
     await typing(message)
     lang = message.from_user.language_code
@@ -174,10 +337,6 @@ async def get_inprogress_orders(message: types.Message):#, state: FSMContext):
     await push_orders_bot(message, lang, records)
 
 
-# @router.message(
-#     F.text.startswith(UI_TEXTS["ru"]["ready_orders"]) | 
-#     F.text.startswith(UI_TEXTS["en"]["ready_orders"])
-# )
 
 # START GET READY ORDERS
 @router.message(
@@ -200,9 +359,8 @@ async def get_ready_orders(message: types.Message):#, state: FSMContext):
 
 
 
-
 # GET LAST 30 ORDERS
-@router.message((F.text == ORDER["last_ru"]) | (F.text == ORDER["last"]))
+@router.message((F.text == UI_TEXTS["ru"]["last_orders"]) | (F.text == UI_TEXTS["en"]["last_orders"]))
 async def get_last(message: types.Message):#, state: FSMContext):
     """ Показать последние 30 заказов """
     await typing(message)

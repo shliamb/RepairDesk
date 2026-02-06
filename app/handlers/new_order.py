@@ -750,7 +750,7 @@ async def client(message: types.Message, state: FSMContext):
 
 
 # START CREATE NEW ORDER
-@router.message((F.text == ORDER["new_ru"]) | (F.text == ORDER["new_en"]))
+@router.message((F.text == UI_TEXTS["ru"]["new_order"]) | (F.text == UI_TEXTS["en"]["new_order"]))
 async def new_order(message: types.Message, state: FSMContext):
     """ Новый заказ / New order"""
     await typing(message)

@@ -35,7 +35,7 @@ def create_tables_in_db():
             repair_count_total INT,                                                             -- Колличество ремонтов/обращений за все время
             
             real_name VARCHAR(50),                                                              -- Админ добавляет менеджеров и устанавливаем им реальные имена для доков
-            description_user VARCHAR(200),                                                      -- Описание пользователя, для внутреннего использования
+            description_user VARCHAR,                                                           -- Описание пользователя, для внутреннего использования
             source VARCHAR(200),                                                                -- Источник рекламы
             block BOOLEAN DEFAULT FALSE,                                                        -- Блок для пид..ов
             hum_quality VARCHAR(50),                                                            -- Бывает полезно, когда повторные обращения - экономит время и нервы   
