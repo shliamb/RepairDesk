@@ -1,11 +1,12 @@
 #! handlers/viewing_orders.py.py
 from handlers.common import typing, is_manager
+from handlers.workshop import workshop_panel
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from utils.formatters import format_date_nice
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
 from config import CANCEL, ORDER, IN_PROGRESS_STATUSES, READY_STATUSES, \
@@ -27,32 +28,43 @@ class Order(StatesGroup):
 
 
 
-
+# OUTPUTTING ORDERS TO THE TELEGRAMM BOT
 async def push_orders_bot(
-    message: types.Message, 
+    message: types.Message,
+    state: FSMContext,
     lang: str, 
     records: list,
     offset: int = 0,
-    page_size: int = 5
+    page_size: int = 10,
 ):
-    """Вывод заказов с пагинацией"""
+    """ Вывод заказов в телеграмм боте.
     
+        Для работы с заказами использую 
+        id (id SERIAL PRIMARY KEY) - это 
+        быстре и проще для внутренней работы, 
+        для клиента - order_number """
+    
+    await typing(message)
+
     if not records:
-        if lang == "ru": 
-            await message.answer("Заказов нет")
-        else: 
-            await message.answer("There are no orders")
+        if lang == "ru": await message.answer("Заказов нет")
+        else: await message.answer("There are no orders")
         return
     
     # Вычисляем, сколько осталось записей после текущей страницы
     total_records = len(records)
-    end_index = min(offset + page_size, total_records)
+
+    if offset + page_size > total_records:
+        end_index = total_records
+    else:
+        end_index = offset + page_size
     
     # Выводим только текущую страницу
     for i in range(offset, end_index):
         one = records[i]
         order = ""
         id = one.get("id")
+        # print("id order:", id)
         order_number = one.get("order_number")
         order_type = one.get("order_type")
         device_type = one.get("device_type")
@@ -113,45 +125,233 @@ async def push_orders_bot(
     
     # Если есть ещё записи - добавляем кнопку "Ещё"
     if end_index < total_records:
+
+        await state.update_data(records=records, offset=offset+page_size, page_size=page_size)
+
         remaining = total_records - end_index
-        
-        load_more_btn = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
-                text=f"📥 {f'Ещё {remaining}' if lang == 'ru' else f'Load {remaining}'}",
-                callback_data=f"load_more_orders_{end_index}"
-            )
-        ]])
-        
-        await message.answer(
-            f"📄 {end_index}/{total_records}" + 
-            (f"\nЗагрузить ещё {remaining}?" if lang == "ru" else f"\nLoad {remaining} more?"),
-            reply_markup=load_more_btn
-        )
+        button_load = f"📥 {f'Ещё {remaining}' if lang == 'ru' else f'Load {remaining}'}"
+        text_message = f"📄 {end_index}/{total_records}" + (f"\nЗагрузить ещё {remaining}?" if lang == "ru" else f"\nLoad {remaining} more?")
+        await message.answer(text_message, reply_markup = build_keyboard([button_load, UI_TEXTS[lang]['cancel']]))
+    
+    else:
+        await state.update_data(records=[], offset=0, page_size=None)
+        # if lang == "ru": await message.answer("👍 Больше записей нет", reply_markup=ReplyKeyboardRemove())
+        # else: await message.answer("👍 Done", reply_markup=ReplyKeyboardRemove())
+        await workshop_panel(message, state)
+
+
 
 
 # Обработчик кнопки "Ещё"
-@router.callback_query(F.data.startswith("load_more_orders_"))
-async def load_more_orders(callback: types.CallbackQuery):
-    offset = int(callback.data.split("_")[-1])
+@router.message(
+        F.text.startswith("📥 Load") |
+        F.text.startswith("📥 Ещё")
+)
+async def load_more_orders(message: types.Message, state: FSMContext):
+    """ Догрузить еще заказы"""
+    await typing(message)
+    lang = message.from_user.language_code
+    state_data = await state.get_data()
+    records = state_data.get("records")
+    offset = state_data.get("offset")
+    page_size = state_data.get("page_size")
+    await push_orders_bot(message, state, lang, records, offset=offset, page_size=page_size)
     
-    # Получаем записи заново или из FSM
-    # Например, если хранили в FSM:
-    state_data = await callback.message.bot.get_state(callback.from_user.id)
-    records = state_data.get("orders_list", [])
-    
-    # Удаляем предыдущее сообщение с кнопкой "Ещё"
-    await callback.message.delete()
-    
-    # Выводим следующую страницу
-    await push_orders_bot(
-        message=callback.message,
-        lang=callback.from_user.language_code,
-        records=records,
-        offset=offset,
-        page_size=30
-    )
-    
+
+
+
+
+
+# OPEN ORDER
+@router.callback_query(F.data.startswith("edit_order_"))
+async def edit_order(callback: types.CallbackQuery, state: FSMContext):
+    """ Выбор объекта изменения под каждым заказом """
+    lang = callback.from_user.language_code
+    id = callback.data.split("_")[-1]  # вытащить ID
+    if not isinstance(id, int): id = int(id)
+    else: logger.error(f"{id} is not digit")
+    #await callback.message.answer(f"Редактируем заказ {id}")
+    # await callback.message.answer(f"process_edit_order_{id}", parse_mode=None)
+    buttons = [UI_TEXTS[lang]["order"], UI_TEXTS[lang]["client"], UI_TEXTS[lang]["cancel"]]
+    if lang == "ru": intro_text = f"Выберите действие по заказу:"
+    else: intro_text = f"Select the order action:"
+    await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
+    await state.update_data(id=id)
+    await state.set_state(Order.edit)
     await callback.answer()
+
+
+
+# ACTION ORDER
+@router.callback_query(F.data.startswith("action_order_"))
+async def action_order(callback: types.CallbackQuery, state: FSMContext):
+    """ Выбор действий под каждым заказом """
+    lang = callback.from_user.language_code
+    id = callback.data.split("_")[-1]
+    if not isinstance(id, int): id = int(id)
+    else: logger.error(f"{id} is not digit")
+    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["cancel"]]
+    if lang == "ru": intro_text = f"Выберите действие по заказу:"
+    else: intro_text = f"Select the order action:"
+    await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
+    await state.update_data(id=id)
+    await state.set_state(Order.action)
+    await callback.answer()
+
+
+
+
+
+
+
+
+
+# START GET NEW
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["new_orders"]) | 
+    F.text.startswith(UI_TEXTS["en"]["new_orders"])
+)
+async def get_new(message: types.Message, state: FSMContext):
+    """ Показать заказы в работе"""
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+    
+    # Собрать в процессе Заказы из базы
+    records = await order.get_orders_by_statuses(NEW)
+    await push_orders_bot(message, state, lang, records)
+
+
+
+
+# START GET ISSUED
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["issued"]) | 
+    F.text.startswith(UI_TEXTS["en"]["issued"])
+)
+async def get_issued(message: types.Message, state: FSMContext):
+    """ Показать заказы в работе"""
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+    
+    # Собрать в процессе Заказы из базы
+    records = await order.get_orders_by_statuses(COMPLETED_STATUSES)
+    await push_orders_bot(message, state, lang, records)
+
+
+
+
+# START GET IN PROGRESS ORDERS
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["in_work"]) | 
+    F.text.startswith(UI_TEXTS["en"]["in_work"])
+)
+async def get_in_work(message: types.Message, state: FSMContext):
+    """ Показать заказы в работе"""
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+    
+    # Собрать в процессе Заказы из базы
+    records = await order.get_orders_by_statuses(IN_PROGRESS_STATUSES)
+    await push_orders_bot(message, state, lang, records)
+
+
+
+# START GET READY ORDERS
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["ready_orders"]) | 
+    F.text.startswith(UI_TEXTS["en"]["ready_orders"])
+)
+async def get_ready_orders(message: types.Message, state: FSMContext):
+    """ Показать готовые заказы """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+
+    # Собрать Готовые Заказы из базы
+    records = await order.get_orders_by_statuses(READY_STATUSES)
+    await push_orders_bot(message, state, lang, records)
+
+
+
+# GET LAST ORDERS
+@router.message(
+    F.text.startswith(UI_TEXTS["ru"]["last_orders"]) | 
+    F.text.startswith(UI_TEXTS["en"]["last_orders"])
+)
+async def get_last(message: types.Message, state: FSMContext):
+    """ Показать все заказы от большего к меньшему """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await is_manager(user_id):
+        logger.error(f"{user_id} You don't have access")
+        await message.answer("🔐 You don't have access")
+        return
+
+    records = await order.get_last_orders_all()
+    await push_orders_bot(message, state, lang, records, page_size=10)
+
+
+# # START GET STATISTICS ORDERS
+# @router.message((F.text == ORDER["stat_ru"]) | (F.text == ORDER["stat_en"]))
+# async def get_statistic(message: types.Message):#, state: FSMContext):
+#     """ Показать статистику """
+#     await typing(message)
+#     lang = message.from_user.language_code
+#     user_id = message.from_user.id
+#     if not await is_manager(user_id):
+#         logger.error(f"{user_id} You don't have access")
+#         await message.answer("🔐 You don't have access")
+#         return
+    
+#     stats = await db.get_pool_stats()
+#     print(f"Статистика: {json.dumps(stats, indent=2)}")
+#     await message.answer(f"Статистика: total: {stats}", parse_mode=None)
+#     # await message.answer(f"Статистика: total: {stats.get("total")}, used: {stats.get("used")}, idle: {stats.get("idle")}, percent_used: {stats.get("percent_used")}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # # OUTPUTTING ORDERS TO THE TELEGRAMM BOT
@@ -227,168 +427,3 @@ async def load_more_orders(callback: types.CallbackQuery):
         
 #         await message.answer(order, parse_mode="HTML", reply_markup=keyboard)
 #         #await asyncio.sleep(0.1)
-
-
-# EDIT ORDER
-@router.callback_query(F.data.startswith("edit_order_"))
-async def edit_order(callback: types.CallbackQuery, state: FSMContext):
-    """ Выбор объекта изменения под каждым заказом """
-    lang = callback.from_user.language_code
-    id = callback.data.split("_")[-1]  # вытащить ID
-    if not isinstance(id, int): id = int(id)
-    else: logger.error(f"{id} is not digit")
-    #await callback.message.answer(f"Редактируем заказ {id}")
-    # await callback.message.answer(f"process_edit_order_{id}", parse_mode=None)
-    buttons = [UI_TEXTS[lang]["order"], UI_TEXTS[lang]["client"], UI_TEXTS[lang]["cancel"]]
-    if lang == "ru": intro_text = f"Выберите действие по заказу:"
-    else: intro_text = f"Select the order action:"
-    await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
-    await state.update_data(id=id)
-    await state.set_state(Order.edit)
-    await callback.answer()
-
-
-
-# ACTION ORDER
-@router.callback_query(F.data.startswith("action_order_"))
-async def action_order(callback: types.CallbackQuery, state: FSMContext):
-    """ Выбор действий под каждым заказом """
-    lang = callback.from_user.language_code
-    id = callback.data.split("_")[-1]
-    if not isinstance(id, int): id = int(id)
-    else: logger.error(f"{id} is not digit")
-    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["cancel"]]
-    if lang == "ru": intro_text = f"Выберите действие по заказу:"
-    else: intro_text = f"Select the order action:"
-    await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))
-    await state.update_data(id=id)
-    await state.set_state(Order.action)
-    await callback.answer()
-
-
-
-
-
-
-
-
-
-# START GET NEW
-@router.message(
-    F.text.startswith(UI_TEXTS["ru"]["new_orders"]) | 
-    F.text.startswith(UI_TEXTS["en"]["new_orders"])
-)
-async def get_new(message: types.Message):#, state: FSMContext):
-    """ Показать заказы в работе"""
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
-    
-    # Собрать в процессе Заказы из базы
-    records = await order.get_orders_by_statuses(NEW)
-    await push_orders_bot(message, lang, records)
-
-
-
-
-# START GET ISSUED
-@router.message(
-    F.text.startswith(UI_TEXTS["ru"]["issued"]) | 
-    F.text.startswith(UI_TEXTS["en"]["issued"])
-)
-async def get_issued(message: types.Message):#, state: FSMContext):
-    """ Показать заказы в работе"""
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
-    
-    # Собрать в процессе Заказы из базы
-    records = await order.get_orders_by_statuses(COMPLETED_STATUSES)
-    await push_orders_bot(message, lang, records)
-
-
-
-
-# START GET IN PROGRESS ORDERS
-@router.message(
-    F.text.startswith(UI_TEXTS["ru"]["in_work"]) | 
-    F.text.startswith(UI_TEXTS["en"]["in_work"])
-)
-async def get_in_work(message: types.Message):#, state: FSMContext):
-    """ Показать заказы в работе"""
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
-    
-    # Собрать в процессе Заказы из базы
-    records = await order.get_orders_by_statuses(IN_PROGRESS_STATUSES)
-    await push_orders_bot(message, lang, records)
-
-
-
-# START GET READY ORDERS
-@router.message(
-    F.text.startswith(UI_TEXTS["ru"]["ready_orders"]) | 
-    F.text.startswith(UI_TEXTS["en"]["ready_orders"])
-)
-async def get_ready_orders(message: types.Message):#, state: FSMContext):
-    """ Показать готовые заказы """
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
-
-    # Собрать Готовые Заказы из базы
-    records = await order.get_orders_by_statuses(READY_STATUSES)
-    await push_orders_bot(message, lang, records)
-
-
-
-# GET LAST 30 ORDERS
-@router.message((F.text == UI_TEXTS["ru"]["last_orders"]) | (F.text == UI_TEXTS["en"]["last_orders"]))
-async def get_last(message: types.Message):#, state: FSMContext):
-    """ Показать последние 30 заказов """
-    await typing(message)
-    lang = message.from_user.language_code
-    user_id = message.from_user.id
-    if not await is_manager(user_id):
-        logger.error(f"{user_id} You don't have access")
-        await message.answer("🔐 You don't have access")
-        return
-
-    # Собрать Готовые Заказы из базы
-    records = await order.get_last_orders()
-    await push_orders_bot(message, lang, records)
-
-
-# # START GET STATISTICS ORDERS
-# @router.message((F.text == ORDER["stat_ru"]) | (F.text == ORDER["stat_en"]))
-# async def get_statistic(message: types.Message):#, state: FSMContext):
-#     """ Показать статистику """
-#     await typing(message)
-#     lang = message.from_user.language_code
-#     user_id = message.from_user.id
-#     if not await is_manager(user_id):
-#         logger.error(f"{user_id} You don't have access")
-#         await message.answer("🔐 You don't have access")
-#         return
-    
-#     stats = await db.get_pool_stats()
-#     print(f"Статистика: {json.dumps(stats, indent=2)}")
-#     await message.answer(f"Статистика: total: {stats}", parse_mode=None)
-#     # await message.answer(f"Статистика: total: {stats.get("total")}, used: {stats.get("used")}, idle: {stats.get("idle")}, percent_used: {stats.get("percent_used")}")

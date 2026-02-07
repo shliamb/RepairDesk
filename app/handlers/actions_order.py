@@ -113,9 +113,9 @@ async def actions_order_tap(order_id: int, action: str, message: types.Message, 
         return
 
     elif action == "payd":
-        #await state.update_data(order_id=order_id)
-        if lang == "ru": message_text = "📝 Введите свой вариант срока диагностики:"
-        else: message_text = "📝 Enter your option for the diagnosis period:"
+        await state.update_data(order_id=order_id)
+        if lang == "ru": message_text = "💰 Выберите способ оплаты:"
+        else: message_text = "💰 Select payment method:"
         buttons = [UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"], UI_TEXTS[lang]["cancel"]]
         await message.answer(message_text, reply_markup = build_keyboard(buttons))
         await state.set_state(Action.pay_method)

@@ -74,7 +74,7 @@ async def get_patern_order(message: types.Message, state: FSMContext):
         return
     
     # Вывод заказов с кнопками
-    await push_orders_bot(message, lang, data_orders)
+    await push_orders_bot(message, state, lang, data_orders)
 
 
 

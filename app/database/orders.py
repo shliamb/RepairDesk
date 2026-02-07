@@ -117,7 +117,7 @@ class OrderService:
         # Создаем плейсхолдеры: $1, $2, $3...
         placeholders = ', '.join([f'${i+1}' for i in range(len(statuses))])
         
-        query = f"SELECT * FROM orders WHERE status IN ({placeholders})"
+        query = f"SELECT * FROM orders WHERE status IN ({placeholders}) ORDER BY id DESC"
         
         records = await self.db.fetch(query, *statuses)  # распаковываем статусы
         return [dict(rec) for rec in records]
@@ -130,6 +130,13 @@ class OrderService:
         
         query = """SELECT * FROM orders ORDER BY id ASC LIMIT $1""" # DESC
         records = await self.db.fetch(query, count)
+        return [dict(rec) for rec in records]
+    
+
+    async def get_last_orders_all(self) -> list[dict]:
+        """Получить последние заказы (по убыванию ID)"""
+        query = """SELECT * FROM orders ORDER BY id DESC""" # DESC ASC
+        records = await self.db.fetch(query)
         return [dict(rec) for rec in records]
 
 
@@ -210,6 +217,14 @@ class OrderService:
         query = f"SELECT COUNT(*) FROM orders WHERE status IN ({placeholders})"
         
         count = await self.db.fetchval(query, *statuses)  # fetchval возвращает одно значение
+        return count or 0
+    
+
+    async def count_orders_all(self) -> int:
+        """Получить количество всех заказов (быстрее чем SELECT *)"""
+        query = "SELECT COUNT(*) FROM orders"
+        
+        count = await self.db.fetchval(query)
         return count or 0
 
 
