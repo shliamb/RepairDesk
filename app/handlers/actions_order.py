@@ -2,8 +2,8 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal
-from database.users import get_user_by_user_id, get_user_by_tg
+from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
+from database.users import get_user_by_user_id, get_user_by_tg, edit_client
 from utils.serialize import json_serializer, custom_json_decoder
 from utils.parse import is_number
 from handlers.edit_client import start_edit_client
@@ -45,6 +45,8 @@ async def cancel(message: types.Message, state: FSMContext):
 
 
 
+
+# START PAYD ORDER:
 @router.message(Action.pay_method)
 async def choosing_payment_method(message: types.Message, state: FSMContext):
     """ Выбор способа оплаты и все остальное..  """
@@ -54,17 +56,26 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     input_text = message.text
     state_data = await state.get_data()
 
-    metod_pay, amount = state_data.get("metod_pay") or None, state_data.get("amount") or None
-
+    metod_pay, amount, take, a_tip, order_id, status_order = state_data.get("metod_pay"), state_data.get("amount"), state_data.get("take"), state_data.get("a_tip"), state_data.get("id"), state_data.get("status")
 
     if metod_pay is None:
         if input_text in (UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"]):
             for key, value in UI_TEXTS[lang].items():
-                if input_text == value:
+                if input_text == UI_TEXTS[lang]["no_payment"]:
+                    await state.update_data(
+                        metod_pay=key,
+                        amount=0,
+                        take=True,
+                        a_tip=0
+                    )
+                    break
+
+                elif input_text == value:
                     await state.update_data(metod_pay=key)
                     if lang == "ru": message_text = "💰 Введите вносимую сумму:"
                     else: message_text = "💰 Enter payment amount:"
                     await message.answer(message_text, reply_markup = build_keyboard([UI_TEXTS[lang]["cancel"]]))
+                    return
         else:
             if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
             else: await message.answer("🚫 Try again to select an item from the menu")
@@ -76,23 +87,83 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
             else: await message.answer("🚫 Enter payment amount:")
             return
         
-        await state.update_data(amount=input_text)
-        if lang == "ru": message_text = "Отлично"
-        else: message_text = "Perfect"
-        await message.answer(message_text, reply_markup = build_keyboard([UI_TEXTS[lang]["cancel"]]))
+        await state.update_data(amount=float(input_text))
+        if lang == "ru": message_text = "📤 Клиент забирает устройство?:"
+        else: message_text = "📤 Is the client picking up the device?:"
+        await message.answer(message_text, reply_markup = build_keyboard([UI_TEXTS[lang]["yes"], UI_TEXTS[lang]["no"], UI_TEXTS[lang]["cancel"]]))
+        return
+
+    elif metod_pay and amount and take is None:
+        if input_text not in (UI_TEXTS[lang]["yes"], UI_TEXTS[lang]["no"]):
+            if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+            else: await message.answer("🚫 Try again to select an item from the menu")
+            return
+        
+        if input_text == UI_TEXTS[lang]["yes"]: take = True
+        elif input_text == UI_TEXTS[lang]["no"]: take = False
+
+        await state.update_data(take=take)
+        if lang == "ru": message_text = "🫰 Оставили чаевые:"
+        else: message_text = "🫰 Tip added:"
+        await message.answer(message_text, reply_markup = build_keyboard([UI_TEXTS[lang]["miss"], UI_TEXTS[lang]["cancel"]]))
+        return
 
 
-        state_data = await state.get_data()
-        print(state_data)
+    elif metod_pay and amount and take and a_tip is None:
+        if input_text == UI_TEXTS[lang]["miss"]:
+            a_tip = 0
+            await state.update_data(a_tip=a_tip)
+
+        elif not is_number(input_text):
+            if lang == "ru": await message.answer("🚫 Введите сумму чаевых:")
+            else: await message.answer("🚫 Enter the tip amount:")
+            return
+        
+        else:
+            a_tip = safe_float(input_text)
+            await state.update_data(a_tip=a_tip)
+        
+        print("a_tip:", a_tip)
+    
+
+    # COLLECTING DATA USER:
+    data_order = await order.get_order_id(order_id)
+    client_id = data_order.get("client_id")
+
+    data_user = await get_user_by_user_id(client_id)
+    old_a_tip = data_user.get("a_tip")
+    old_total_spent = data_user.get("total_spent")
+    old_repair_count_total = data_user.get("repair_count_total")
+
+    updata_client = {
+        "user_id": client_id,
+        "a_tip": safe_decimal(safe_float(old_a_tip) + (a_tip or 0)),
+        "total_spent": safe_decimal(safe_float(old_total_spent) + amount),
+        "repair_count_total": safe_int(old_repair_count_total) + 1
+    }
 
 
-        # Get status:
-
-        await state.update_data(id=None, metod_pay=None, amount=None)
+    #{'user_id': UUID('27eee3fd-25ba-4eae-a1c2-b075515ee292'), 'a_tip': Decimal('10.0'), 'total_spent': Decimal('1400.0'), 'repair_count_total': 2}
 
 
 
+    # UPDATE CLIENT DATA:
+    print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
+    print(updata_client)
+    # if not await edit_client(updata_client):
+    #     if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных клиента")
+    #     else: await message.answer("🚫 Error in updating client data")
 
+    await state.update_data(id=None, metod_pay=None, amount=None, take=None, a_tip=None)
+
+
+
+
+
+
+
+
+# CHOICE ACTIONS ORDER: 
 async def actions_order_tap(order_id: int, action: str, message: types.Message, state: FSMContext):
     """ Выбор вариантов при нажатии - действия на заказе """
     await typing(message)
@@ -113,7 +184,7 @@ async def actions_order_tap(order_id: int, action: str, message: types.Message, 
         return
 
     elif action == "payd":
-        await state.update_data(order_id=order_id)
+        # await state.update_data(order_id=order_id) Уже есть внутри id = order_id
         if lang == "ru": message_text = "💰 Выберите способ оплаты:"
         else: message_text = "💰 Select payment method:"
         buttons = [UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"], UI_TEXTS[lang]["cancel"]]

@@ -134,6 +134,7 @@ def create_tables_in_db():
             payment_date TIMESTAMP DEFAULT NOW(),                                               -- Когда оплатили
             order_created_date TIMESTAMP,                                                       -- Когда создан заказ (дублируем для аналитики)
             order_completed_date TIMESTAMP,                                                     -- Когда завершён
+            who_issued UUID REFERENCES users(user_id),                                          -- Кто принял оплату или выдал устройство клиенту
             
             device_type VARCHAR(50),                                                            -- Тип устройства (phone/laptop)
             device_model VARCHAR(100),                                                          -- Модель

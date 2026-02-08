@@ -123,8 +123,11 @@ def format_telegram_username(username: str) -> str | None:
 
 
 # Правильная safe_decimal
-def safe_decimal(value) -> Decimal | None:
-    """Безопасное преобразование в Decimal."""
+def safe_decimal(value, default=Decimal('0')) -> Decimal:
+    """Безопасное преобразование в Decimal"""
+    if value is None:
+        return default
+
     try:
         if isinstance(value, Decimal):
             return value
@@ -133,39 +136,40 @@ def safe_decimal(value) -> Decimal | None:
         else:
             return Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError, AttributeError):
-        return None
+        return default
 
 
 
-def safe_int(value, only_positive: bool = True) -> int | None:
-    """ Из str в INT """
+def safe_int(value, default=0) -> int:
+    """Безопасное преобразование в int"""
+    if value is None:
+        return default
+
     try:
         if isinstance(value, (int, float)):
             num = int(value)
         else:
             num = int(str(value).strip())
         
-        if only_positive:
-            num = abs(num)
-        
         return num
     except (ValueError, TypeError, AttributeError):
-        return None
+        return default
     
 
-def safe_float(value) -> float | None:
-    """ Из str в Float"""
+def safe_float(value, default=0.0) -> float:
+    """Безопасное преобразование в float"""
+    if value is None:
+        return default
+
     try:
         if isinstance(value, (float, int)):
             num = float(value)
         else:
             num = float(str(value).strip())
         
-        num = abs(num)
-        
         return num
     except (ValueError, TypeError, AttributeError):
-        return None
+        return default
     
 
 
