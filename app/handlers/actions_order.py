@@ -59,18 +59,16 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     metod_pay, amount, take, a_tip, order_id, status_order = state_data.get("metod_pay"), state_data.get("amount"), state_data.get("take"), state_data.get("a_tip"), state_data.get("id"), state_data.get("status")
 
     if metod_pay is None:
-        if input_text in (UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"]):
-            for key, value in UI_TEXTS[lang].items():
-                if input_text == UI_TEXTS[lang]["no_payment"]:
-                    await state.update_data(
-                        metod_pay=key,
-                        amount=0,
-                        take=True,
-                        a_tip=0
-                    )
-                    break
+        if input_text == UI_TEXTS[lang]["no_payment"]:
+            status_order = "issued_not_paid"
+            metod_pay = "no_payment",
+            amount = 0,
+            take = True,
+            a_tip = 0
 
-                elif input_text == value:
+        elif input_text in (UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"]):
+            for key, value in UI_TEXTS[lang].items():
+                if input_text == value:
                     await state.update_data(metod_pay=key)
                     if lang == "ru": message_text = "💰 Введите вносимую сумму:"
                     else: message_text = "💰 Enter payment amount:"
@@ -87,7 +85,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
             else: await message.answer("🚫 Enter payment amount:")
             return
         
-        await state.update_data(amount=float(input_text))
+        await state.update_data(amount=safe_float(input_text))
         if lang == "ru": message_text = "📤 Клиент забирает устройство?:"
         else: message_text = "📤 Is the client picking up the device?:"
         await message.answer(message_text, reply_markup = build_keyboard([UI_TEXTS[lang]["yes"], UI_TEXTS[lang]["no"], UI_TEXTS[lang]["cancel"]]))
@@ -109,7 +107,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
         return
 
 
-    elif metod_pay and amount and take and a_tip is None:
+    elif metod_pay and amount and take is not None and a_tip is None:
         if input_text == UI_TEXTS[lang]["miss"]:
             a_tip = 0
             await state.update_data(a_tip=a_tip)
@@ -122,9 +120,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
         else:
             a_tip = safe_float(input_text)
             await state.update_data(a_tip=a_tip)
-        
-        print("a_tip:", a_tip)
-    
+
 
     # COLLECTING DATA USER:
     data_order = await order.get_order_id(order_id)
@@ -137,24 +133,36 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
 
     updata_client = {
         "user_id": client_id,
-        "a_tip": safe_decimal(safe_float(old_a_tip) + (a_tip or 0)),
-        "total_spent": safe_decimal(safe_float(old_total_spent) + amount),
+        "a_tip": safe_decimal(safe_float(old_a_tip) + (safe_float(a_tip) or 0)),
+        "total_spent": safe_decimal(safe_float(old_total_spent) + safe_float(amount)),
         "repair_count_total": safe_int(old_repair_count_total) + 1
     }
 
+    # GET STATUS ORDER:
+    # status_order = 
 
-    #{'user_id': UUID('27eee3fd-25ba-4eae-a1c2-b075515ee292'), 'a_tip': Decimal('10.0'), 'total_spent': Decimal('1400.0'), 'repair_count_total': 2}
+    # GET DATA FIN STATISTIC:
+    #
 
-
-
-    # UPDATE CLIENT DATA:
     print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
     print(updata_client)
+
+
+
+    # UPDATE FIN STATISTIC:
+    #
+
+    # UPDATE ORDER:
+    #
+
+    # UPDATE CLIENT DATA:
     # if not await edit_client(updata_client):
     #     if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных клиента")
     #     else: await message.answer("🚫 Error in updating client data")
 
     await state.update_data(id=None, metod_pay=None, amount=None, take=None, a_tip=None)
+    if lang == "ru": await message.answer("👍 Изменения сохранены", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("👍 The changes are saved", reply_markup=ReplyKeyboardRemove())
 
 
 
