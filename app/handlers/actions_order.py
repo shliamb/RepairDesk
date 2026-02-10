@@ -4,6 +4,7 @@ from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
 from database.users import get_user_by_user_id, get_user_by_tg, edit_client
+from database.finstat import add_stat
 from utils.serialize import json_serializer, custom_json_decoder
 from utils.parse import is_number
 from handlers.edit_client import start_edit_client
@@ -12,7 +13,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import UI_TEXTS
+from config import UI_TEXTS, CURRENCY
 from keyboards.workshop import build_keyboard
 from database import db
 from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
@@ -52,7 +53,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     """ Выбор способа оплаты и все остальное..  """
     await typing(message)
     lang = message.from_user.language_code
-    #user_id = message.from_user.id
+    user_id = message.from_user.id
     input_text = message.text
     state_data = await state.get_data()
 
@@ -61,9 +62,9 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     if metod_pay is None:
         if input_text == UI_TEXTS[lang]["no_payment"]:
             status_order = "issued_not_paid"
-            metod_pay = "no_payment",
-            amount = 0,
-            take = True,
+            metod_pay = "no_payment"
+            amount = 0
+            take = True
             a_tip = 0
 
         elif input_text in (UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"]):
@@ -124,6 +125,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
 
     # COLLECTING DATA USER:
     data_order = await order.get_order_id(order_id)
+    if not status_order: status_order = data_order.get("status")
     client_id = data_order.get("client_id")
 
     data_user = await get_user_by_user_id(client_id)
@@ -139,30 +141,98 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     }
 
     # GET STATUS ORDER:
-    # status_order = 
+    if status_order == "issued":
+        if lang == "ru": await message.answer("🚫 Заказ уже выдан")
+        else: await message.answer("🚫 The order has already been issued")
+        return
+
+    elif status_order not in ("issued_not_paid", "cancelled", "unsuccessful_repair", "paid_not_issued"):
+        if not take and metod_pay != UI_TEXTS[lang]["no_payment"] and amount != 0:
+            status_order = "paid_not_issued"
+
+        elif take and metod_pay != UI_TEXTS[lang]["no_payment"] and amount != 0:
+            status_order = "issued"
+
+    updata_order = {
+        "id": order_id,
+        "status": status_order
+    }
 
     # GET DATA FIN STATISTIC:
-    #
+    data_user_issued = await get_user_by_tg(user_id)
+    who_issued = data_user_issued.get("user_id")
 
-    print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
-    print(updata_client)
+    fin_data = {
+        "order_id": order_id,
+        "client_id": client_id,
+        "master_id": data_order.get("master") or "602f3c8b-4865-4e56-b337-152093c5814e",
+        "payment_amount": safe_decimal(amount),
+        "net_profit": safe_decimal(data_order.get("net_profit")),
+        "payment_method": metod_pay,
+        "payment_date": datetime.now(),
+        "order_created_date": data_order.get("created_date"),
+        "order_completed_date": data_order.get("completion_date"),
+        # "who_issued": who_issued,
+        "device_type": data_order.get("order_type"),
+        "device_model": data_order.get("device_model"),
+        "repair_type": data_order.get("order_type")
+    }
 
+    # print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
+    # print("updata_client:", updata_client)
+    # print("fin_data:", fin_data)
+    # print("updata_order:", updata_order)
+
+    # СДАЧА КЛИЕНТУ:
+    total = None
+    cost_repair = data_order.get("cost_repair") or 0
+    cost_of_parts = data_order.get("cost_of_parts") or  0
+
+    if not cost_repair and not cost_of_parts:
+        if lang == "ru": await message.answer(f"🚫 В заказе отсутствуют оплачиваемые услуги", reply_markup=ReplyKeyboardRemove())
+        else: await message.answer(f"🚫 There are no paid services in the order", reply_markup=ReplyKeyboardRemove())
+        await state.clear()
+        return 
+
+    if status_order != "issued_not_paid":
+        total = float(amount) - (float(cost_repair) + float(cost_of_parts) - float(data_order.get("cost_prepayment") or 0))
+
+        if total < 0:
+            if lang == "ru": await message.answer(f"🚫 Для оплаты не хватает {abs(total)} {CURRENCY}, попробуйте еще раз", reply_markup=ReplyKeyboardRemove())
+            else: await message.answer(f"🚫 There is not enough money for payment {abs(total)} {CURRENCY}, please try again", reply_markup=ReplyKeyboardRemove())
+            await state.clear()
+            return 
 
 
     # UPDATE FIN STATISTIC:
-    #
+    if not await add_stat(fin_data):
+        if lang == "ru": await message.answer("🚫 Ошибка в обновлении финансовой транзакции")
+        else: await message.answer("🚫 An error in updating a financial transaction")
+        return
 
     # UPDATE ORDER:
-    #
+    if not await order.edit_order(updata_order):
+        if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных заказа")
+        else: await message.answer("🚫 Error in updating order data")
+        return
 
     # UPDATE CLIENT DATA:
-    # if not await edit_client(updata_client):
-    #     if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных клиента")
-    #     else: await message.answer("🚫 Error in updating client data")
+    if not await edit_client(updata_client):
+        if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных клиента")
+        else: await message.answer("🚫 Error in updating client data")
+        return
 
+
+    if lang == "ru":
+        text_over = "👍 Изменения сохранены"
+        if total: text_over += f", сдача: {total} {CURRENCY}" 
+    else:
+        text_over = "👍 The changes are saved"
+        if total: text_over += f", surplus: {total} {CURRENCY}" 
+
+    await message.answer(text_over, reply_markup=ReplyKeyboardRemove())
     await state.update_data(id=None, metod_pay=None, amount=None, take=None, a_tip=None)
-    if lang == "ru": await message.answer("👍 Изменения сохранены", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("👍 The changes are saved", reply_markup=ReplyKeyboardRemove())
+    await state.clear()
 
 
 
