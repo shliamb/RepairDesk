@@ -13,7 +13,9 @@ app/test.py
 json/
 downloads/
 app/pdf/out_files/
+
 app/config.py
+app/config1.py
 
 
 
