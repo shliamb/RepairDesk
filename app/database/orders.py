@@ -88,7 +88,19 @@ class OrderService:
             return dict(record)
         return {}
     
+    
+    async def delete_order_cascade(self, order_id: int) -> bool:
+        """Удалить заказ и связанные с ним записи"""
+        async with self.db.pool.acquire() as conn:
+            async with conn.transaction():
+                # Удаляем связанные записи (финансы..)
+                await conn.execute("DELETE FROM fin_stats WHERE order_id = $1", order_id)
+                #await conn.execute("DELETE FROM order_photos WHERE order_id = $1", order_id)
+                # Удаляем сам заказ
+                result = await conn.execute("DELETE FROM orders WHERE id = $1 RETURNING id", order_id)
+                return 'DELETE' in result
 
+    
     async def get_order_order_number(self, order_number: str) -> dict:
         """ Получить заказ по его order_number"""
         query = "SELECT * FROM orders WHERE order_number = $1"

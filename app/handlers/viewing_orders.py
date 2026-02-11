@@ -75,6 +75,14 @@ async def push_orders_bot(
         problem = json.loads(one.get("problem")) if one.get("problem") else ""
         problem = ", ".join(problem.copy())
         status = one.get("status")
+
+        if status in ("issued", "paid_not_issued"):
+            icon_payd = "💵"
+        elif status in "ready":
+            icon_payd = "⏳"
+        else:
+            icon_payd = None
+
         created_date = one.get("created_date")
         created_date = format_date_nice(created_date, lang)
         diagnosis_before = one.get("diagnosis_before")
@@ -95,6 +103,8 @@ async def push_orders_bot(
 
             if total:
                 order += f'   <b>ИТОГО: {total:,.0f} {CURRENCY}</b>'
+            if icon_payd:
+                order += f' {icon_payd}'
 
         else:
             order = (
@@ -107,6 +117,8 @@ async def push_orders_bot(
 
             if total:
                 order += f'   <b>TOTAL: {total:,.0f} {CURRENCY}</b>'
+            if icon_payd:
+                order += f' {icon_payd}'
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [
@@ -190,7 +202,7 @@ async def action_order(callback: types.CallbackQuery, state: FSMContext):
     id = callback.data.split("_")[-1]
     if not isinstance(id, int): id = int(id)
     else: logger.error(f"{id} is not digit")
-    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["cancel"]]
+    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["delet"], UI_TEXTS[lang]["cancel"]]
     if lang == "ru": intro_text = f"Выберите действие по заказу:"
     else: intro_text = f"Select the order action:"
     await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))

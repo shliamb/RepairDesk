@@ -13,7 +13,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import UI_TEXTS, CURRENCY
+from config import UI_TEXTS, CURRENCY, ADMIN_ID
 from keyboards.workshop import build_keyboard
 from database import db
 from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
@@ -142,8 +142,9 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
 
     # GET STATUS ORDER:
     if status_order == "issued":
-        if lang == "ru": await message.answer("🚫 Заказ уже выдан")
-        else: await message.answer("🚫 The order has already been issued")
+        if lang == "ru": await message.answer("🚫 Заказ уже выдан", reply_markup=ReplyKeyboardRemove())
+        else: await message.answer("🚫 The order has already been issued", reply_markup=ReplyKeyboardRemove())
+        await state.clear()
         return
 
     elif status_order not in ("issued_not_paid", "cancelled", "unsuccessful_repair", "paid_not_issued"):
@@ -161,18 +162,22 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     # GET DATA FIN STATISTIC:
     data_user_issued = await get_user_by_tg(user_id)
     who_issued = data_user_issued.get("user_id")
+    uuid_master = data_order.get("master")
+    if not uuid_master:
+        data_admin = await get_user_by_tg(ADMIN_ID)
+        uuid_master = data_admin.get("user_id") # UUID MASTER
 
     fin_data = {
         "order_id": order_id,
         "client_id": client_id,
-        "master_id": data_order.get("master") or "602f3c8b-4865-4e56-b337-152093c5814e",
+        "master_id": uuid_master,
         "payment_amount": safe_decimal(amount),
         "net_profit": safe_decimal(data_order.get("net_profit")),
         "payment_method": metod_pay,
         "payment_date": datetime.now(),
         "order_created_date": data_order.get("created_date"),
         "order_completed_date": data_order.get("completion_date"),
-        # "who_issued": who_issued,
+        "who_issued": who_issued,
         "device_type": data_order.get("order_type"),
         "device_model": data_order.get("device_model"),
         "repair_type": data_order.get("order_type")
@@ -208,20 +213,22 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     if not await add_stat(fin_data):
         if lang == "ru": await message.answer("🚫 Ошибка в обновлении финансовой транзакции")
         else: await message.answer("🚫 An error in updating a financial transaction")
+        await state.clear()
         return
 
     # UPDATE ORDER:
     if not await order.edit_order(updata_order):
         if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных заказа")
         else: await message.answer("🚫 Error in updating order data")
+        await state.clear()
         return
 
     # UPDATE CLIENT DATA:
     if not await edit_client(updata_client):
         if lang == "ru": await message.answer("🚫 Ошибка в обновлении данных клиента")
         else: await message.answer("🚫 Error in updating client data")
+        await state.clear()
         return
-
 
     if lang == "ru":
         text_over = "👍 Изменения сохранены"
@@ -260,6 +267,22 @@ async def actions_order_tap(order_id: int, action: str, message: types.Message, 
     elif action == "pdf":
         await message.answer("🚫 pdf")
         return
+    
+    elif action == "delet":
+        if user_id != ADMIN_ID:
+            if lang == "ru": await message.answer("🚫 У вас нет доступа. Обратитесь к супер администратору")
+            else: await message.answer("🚫 You don't have access. Contact the super administrator")
+            return
+
+        result = await order.delete_order_cascade(order_id)
+        if not result:
+            if lang == "ru": await message.answer(" Ошибка в удалении заказа")
+            else: await message.answer("🚫 Error in deleting an order")
+            return
+        else:
+            if lang == "ru": await message.answer("👍 Заказ и его финансовые операции удалены")
+            else: await message.answer("👍 The order and its financial transactions have been deleted")
+            return
 
     elif action == "payd":
         # await state.update_data(order_id=order_id) Уже есть внутри id = order_id

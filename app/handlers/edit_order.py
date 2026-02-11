@@ -1,5 +1,5 @@
 #! app/handlers/edit_order.py
-from handlers.common import typing, is_manager
+from handlers.common import typing, is_manager, is_admin, is_master
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal
@@ -12,7 +12,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
-from config import HUMAN_QUALITY, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL, UI_TEXTS
+from config import HUMAN_QUALITY, CHANGE_ORDER, CURRENCY, DEVICE_ICO, ORDER_STATUS_COLOR, ORDER_STATUS_RU, ORDER_STATUS, EDIT_ORDER, CANCEL, UI_TEXTS, ADMIN_ID
 from keyboards.workshop import build_keyboard
 from database import db
 from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
@@ -104,10 +104,13 @@ async def edit_diagnos(message: types.Message, state: FSMContext):
     """ Заполнение диагностики """
     await typing(message)
     lang = message.from_user.language_code
+    user_tele_id = message.from_user.id
+    data_user = await get_user_by_tg(user_tele_id)
+    user_id = data_user.get("user_id") # UUID MASTER
 
     if message.text:
         state_data = await state.get_data()
-        await state.update_data(data={"id": state_data.get("id"), "diagnosis": message.text})
+        await state.update_data(data={"id": state_data.get("id"), "diagnosis": message.text, "master": user_id})
     
     else:
         if lang == "ru": await message.answer("🚫 Наберите текст диагностики")
@@ -163,6 +166,7 @@ async def add_work(message: types.Message, state: FSMContext):
     await typing(message)
 
     lang = message.from_user.language_code
+    user_tele_id = message.from_user.id
     state_data = await state.get_data()
     work, pieces, price, warranty_period = state_data.get("work"), state_data.get("pieces"), state_data.get("price"), state_data.get("warranty_period")
     
@@ -229,10 +233,13 @@ async def add_work(message: types.Message, state: FSMContext):
             cost_repair += safe_decimal(one.get("price", Decimal("0"))) * int(one.get("pieces"))
 
         # Сохранение результатов в базу
+        data_user = await get_user_by_tg(user_tele_id)
+        user_id = data_user.get("user_id") # UUID MASTER
         data = {
             'id': id,
             'services': json.dumps(old_services, ensure_ascii=False),
             'cost_repair': cost_repair,
+            'master': user_id # UUID
         }
         await edit_order_db(data, state, message)
         await state.update_data(work=None, pieces=None, price=None, warranty_period=None)
@@ -247,6 +254,7 @@ async def add_part(message: types.Message, state: FSMContext):
     await typing(message)
 
     lang = message.from_user.language_code
+    user_tele_id = message.from_user.id
     state_data = await state.get_data()
     part, pieces, price, clean_price, warranty_period = state_data.get("part"), state_data.get("pieces"), state_data.get("price"), state_data.get("clean_price"), state_data.get("warranty_period")
     
@@ -327,12 +335,14 @@ async def add_part(message: types.Message, state: FSMContext):
             cost_price += safe_decimal(one.get("clean_price", Decimal("0")))
 
         # Сохранение результатов в базу
+        data_user = await get_user_by_tg(user_tele_id)
+        user_id = data_user.get("user_id") # UUID MASTER
         data = {
             'id': id,
             'parts': json.dumps(old_parts, ensure_ascii=False),
             'cost_of_parts': cost_of_parts, # Цена за все запчасти
-            'cost_price': cost_price # Цена всех запчастей по себистоимости
-            
+            'cost_price': cost_price, # Цена всех запчастей по себистоимости
+            'master': user_id # UUID
         }
         await edit_order_db(data, state, message)
 
@@ -406,9 +416,17 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
     """ PUSH BUTTONS EDITION ORDER """
     await typing(message)
     lang = message.from_user.language_code
+    user_id = message.from_user.id
 
     # CHANGE STATUS ORDER
     if message.text in (EDIT_ORDER["stat_ru"], EDIT_ORDER["stat"]):
+
+        # Проверка на мастера:
+        if not await is_master(user_id):
+            if lang == "ru": await message.answer("🚫 У вас нет доступа. Вы не мастер.")
+            else: await message.answer("🚫 You don't have access. You are not a master.")
+            return
+
         if lang == "ru":
             buttons = list(ORDER_STATUS_RU.values())
             buttons.append(CANCEL["ru"])
@@ -423,6 +441,13 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
 
     # WRITE DIAGNOSTIC
     elif message.text in (EDIT_ORDER["dia_ru"], EDIT_ORDER["dia"]):
+
+        # Проверка на мастера:
+        if not await is_master(user_id):
+            if lang == "ru": await message.answer("🚫 У вас нет доступа. Вы не мастер.")
+            else: await message.answer("🚫 You don't have access. You are not a master.")
+            return
+
         buttons = []
         if lang == "ru":
             buttons.append(CANCEL["ru"])
@@ -449,6 +474,12 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
 
     # CLEAR PARTS AND WORK
     elif message.text in (EDIT_ORDER["clear_ru"], EDIT_ORDER["clear"]):
+
+        # Очистка только ADMIN:
+        if not await is_admin(user_id):
+            if lang == "ru": await message.answer("🚫 У вас нет доступа. Обратитесь к администратору")
+            else: await message.answer("🚫 You don't have access. Contact the administrator")
+            return
         
         state_data = await state.get_data()
         data = {
@@ -459,7 +490,8 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
             "net_profit": None,
             "cost_repair": None,
             "cost_of_parts": None,
-            "cost_prepayment": None
+            "cost_prepayment": None,
+            "master": None
             # "cost_diagnostics": None
         }
         await edit_order_db(data, state, message)
@@ -467,6 +499,13 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
 
     # ADD SERVICE/WORK
     elif message.text in (EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_serv"]):
+
+        # Проверка на мастера:
+        if not await is_master(user_id):
+            if lang == "ru": await message.answer("🚫 У вас нет доступа. Вы не мастер.")
+            else: await message.answer("🚫 You don't have access. You are not a master.")
+            return
+
         buttons = []
         if lang == "ru":
             buttons.append(CANCEL["ru"])
@@ -481,6 +520,13 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
 
     # ADD PART
     elif message.text in (EDIT_ORDER["add_part_ru"], EDIT_ORDER["add_part"]):
+
+        # Проверка на мастера:
+        if not await is_master(user_id):
+            if lang == "ru": await message.answer("🚫 У вас нет доступа. Вы не мастер.")
+            else: await message.answer("🚫 You don't have access. You are not a master.")
+            return
+
         buttons = []
         if lang == "ru":
             buttons.append(CANCEL["ru"])
@@ -973,6 +1019,8 @@ async def process_action_order(message: types.Message, state: FSMContext):
         action = "pdf"
     elif message.text == UI_TEXTS[lang]["payd"]:
         action = "payd"
+    elif message.text == UI_TEXTS[lang]["delet"]:
+        action = "delet"
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
