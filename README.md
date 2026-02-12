@@ -3,7 +3,7 @@
 **Telegram-бот для автоматизации ремонтной мастерской**  
 *Telegram bot for repair shop automation*
 
-[English](#English) | [Русский](#Русский)
+[English](#english) | [Русский](#русский)
 
 ---
 
