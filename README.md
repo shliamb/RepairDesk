@@ -3,12 +3,12 @@
 **Telegram-бот для автоматизации ремонтной мастерской**  
 *Telegram bot for repair shop automation*
 
-[English](#english) | [Русский](#русский)
+[English](#english) | [Русский](#русский-)
 
 
 ---
 
-## Русский
+## Русский 🇷🇺
 
 ### О проекте
 
@@ -226,7 +226,7 @@ MIT — делай что хочешь, но упомяни автора.
 
 ---
 
-## English 🇬🇧
+## English
 
 ### About
 
