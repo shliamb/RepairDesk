@@ -1,17 +1,68 @@
-from config import TELEGRAM_BOT_TOKEN, ADMIN_ID
-from logs.set_logger import set_logger
-logger = set_logger(name="bot")
+from config import TELEGRAM_BOT_TOKEN, ADMIN_ID, PROXY
+# from logs.set_logger import set_logger
+# logger = set_logger(name="bot")
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('aiogram').setLevel(logging.DEBUG)
 from handlers import ALL_ROUTERS
 from database import db
 import asyncio
 from aiogram import Bot, Dispatcher, Router, types, F
+from aiogram.client.session.aiohttp import AiohttpSession
 
 
+session = AiohttpSession(proxy=PROXY) if PROXY else None
+
+bot = Bot(
+    TELEGRAM_BOT_TOKEN,
+    session=session,
+    parse_mode="markdown"
+)
 
 
-bot = Bot(TELEGRAM_BOT_TOKEN, parse_mode="markdown")
 dp = Dispatcher()
 
+
+
+
+
+async def get_public_ip(proxy_url: str = None) -> str:
+    """
+    Получает внешний IP.
+    Если proxy_url указан — через прокси, иначе — напрямую.
+    """
+
+    from aiohttp import ClientSession
+    from aiohttp_socks import ProxyConnector
+
+    connector = None
+    if proxy_url:
+        try:
+            connector = ProxyConnector.from_url(proxy_url)
+        except Exception as e:
+            print(f"⚠️ Proxy connector failed: {e}")
+    
+    async with ClientSession(connector=connector) as session:
+        try:
+            async with session.get('https://api.ipify.org') as resp:
+                ip = await resp.text()
+                return ip
+        except Exception as e:
+            print(f"⚠️ Failed to get IP: {e}")
+            return "unknown"
+        
+
+async def check_proxy():
+    """Проверяет IP через прокси (если есть)"""
+    if PROXY:
+        ip = await get_public_ip(PROXY)
+        print(f"🤖 Bot IP through proxy: {ip}")
+        return ip
+    else:
+        ip = await get_public_ip()
+        print(f"🤖 Bot IP (direct): {ip}")
+        return ip
+    
 
 
 async def init_router() -> None:
@@ -25,6 +76,7 @@ async def init_router() -> None:
 
 
 async def main_bot() -> None:
+    await check_proxy()
     await init_router()
     await db.connect()
 

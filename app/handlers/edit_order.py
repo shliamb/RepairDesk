@@ -105,12 +105,10 @@ async def edit_diagnos(message: types.Message, state: FSMContext):
     await typing(message)
     lang = message.from_user.language_code
     user_tele_id = message.from_user.id
-    data_user = await get_user_by_tg(user_tele_id)
-    user_id = data_user.get("user_id") # UUID MASTER
 
     if message.text:
         state_data = await state.get_data()
-        await state.update_data(data={"id": state_data.get("id"), "diagnosis": message.text, "master": user_id})
+        await state.update_data(data={"id": state_data.get("id"), "diagnosis": message.text})
     
     else:
         if lang == "ru": await message.answer("🚫 Наберите текст диагностики")
@@ -118,9 +116,12 @@ async def edit_diagnos(message: types.Message, state: FSMContext):
         return
 
     state_data = await state.get_data()
+    data_user = await get_user_by_tg(user_tele_id)
+    user_id = data_user.get("user_id") # UUID MASTER
     data = {
         "id": state_data.get("id"),
-        "diagnosis": message.text
+        "diagnosis": message.text,
+        "master": user_id # UUID
     }
     await edit_order_db(data, state, message)
 
@@ -874,6 +875,8 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
 
     # GET DATA MASTER:
     uuid_master = data_order.get("master") # UUID
+    # print("data_order:", data_order)
+    # print("uuid_master:", uuid_master)
     data_master = await get_user_by_user_id(uuid_master)
     real_name_master = data_master.get("real_name_created") or data_master.get("name")
     master_telegram = format_telegram_username(data_master.get("username_telegram"))

@@ -14,6 +14,7 @@ json/
 downloads/
 app/pdf/out_files/
 app/config.py
+.requirements.freeze.txt
 
 
 

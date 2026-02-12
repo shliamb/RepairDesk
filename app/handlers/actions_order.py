@@ -140,25 +140,6 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
         "repair_count_total": safe_int(old_repair_count_total) + 1
     }
 
-    # GET STATUS ORDER:
-    if status_order == "issued":
-        if lang == "ru": await message.answer("🚫 Заказ уже выдан", reply_markup=ReplyKeyboardRemove())
-        else: await message.answer("🚫 The order has already been issued", reply_markup=ReplyKeyboardRemove())
-        await state.clear()
-        return
-
-    elif status_order not in ("issued_not_paid", "cancelled", "unsuccessful_repair", "paid_not_issued"):
-        if not take and metod_pay != UI_TEXTS[lang]["no_payment"] and amount != 0:
-            status_order = "paid_not_issued"
-
-        elif take and metod_pay != UI_TEXTS[lang]["no_payment"] and amount != 0:
-            status_order = "issued"
-
-    updata_order = {
-        "id": order_id,
-        "status": status_order
-    }
-
     # GET DATA FIN STATISTIC:
     data_user_issued = await get_user_by_tg(user_id)
     who_issued = data_user_issued.get("user_id")
@@ -183,6 +164,26 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
         "repair_type": data_order.get("order_type")
     }
 
+    # GET STATUS ORDER:
+    if status_order == "issued":
+        if lang == "ru": await message.answer("🚫 Заказ уже выдан", reply_markup=ReplyKeyboardRemove())
+        else: await message.answer("🚫 The order has already been issued", reply_markup=ReplyKeyboardRemove())
+        await state.clear()
+        return
+
+    elif status_order not in ("issued_not_paid", "cancelled", "unsuccessful_repair", "paid_not_issued"):
+        if not take and metod_pay != UI_TEXTS[lang]["no_payment"] and amount != 0:
+            status_order = "paid_not_issued"
+
+        elif take and metod_pay != UI_TEXTS[lang]["no_payment"] and amount != 0:
+            status_order = "issued"
+
+    updata_order = {
+        "id": order_id,
+        "status": status_order,
+        "master": uuid_master
+    }
+
     # print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
     # print("updata_client:", updata_client)
     # print("fin_data:", fin_data)
@@ -193,11 +194,11 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     cost_repair = data_order.get("cost_repair") or 0
     cost_of_parts = data_order.get("cost_of_parts") or  0
 
-    if not cost_repair and not cost_of_parts:
-        if lang == "ru": await message.answer(f"🚫 В заказе отсутствуют оплачиваемые услуги", reply_markup=ReplyKeyboardRemove())
-        else: await message.answer(f"🚫 There are no paid services in the order", reply_markup=ReplyKeyboardRemove())
-        await state.clear()
-        return 
+    # if not cost_repair and not cost_of_parts:
+    #     if lang == "ru": await message.answer(f"🚫 В заказе отсутствуют оплачиваемые услуги", reply_markup=ReplyKeyboardRemove())
+    #     else: await message.answer(f"🚫 There are no paid services in the order", reply_markup=ReplyKeyboardRemove())
+    #     await state.clear()
+    #     return 
 
     if status_order != "issued_not_paid":
         total = float(amount) - (float(cost_repair) + float(cost_of_parts) - float(data_order.get("cost_prepayment") or 0))
