@@ -51,6 +51,7 @@ async def get_public_ip(proxy_url: str = None) -> str:
             print(f"⚠️ Failed to get IP: {e}")
             return "unknown"
         
+        
 
 async def check_proxy():
     """Проверяет IP через прокси (если есть)"""
