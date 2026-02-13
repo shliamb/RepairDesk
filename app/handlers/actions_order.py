@@ -125,6 +125,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
 
     # COLLECTING DATA USER:
     data_order = await order.get_order_id(order_id)
+    completion_date = data_order.get("completion_date")
     if not status_order: status_order = data_order.get("status")
     client_id = data_order.get("client_id")
 
@@ -157,7 +158,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
         "payment_method": metod_pay,
         "payment_date": datetime.now(),
         "order_created_date": data_order.get("created_date"),
-        "order_completed_date": data_order.get("completion_date"),
+        "order_completed_date": completion_date or datetime.now(),
         "who_issued": who_issued,
         "device_type": data_order.get("order_type"),
         "device_model": data_order.get("device_model"),
@@ -181,8 +182,9 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     updata_order = {
         "id": order_id,
         "status": status_order,
-        "master": uuid_master
+        "master": uuid_master,
     }
+    if not completion_date: updata_order["completion_date"] = datetime.now()
 
     # print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
     # print("updata_client:", updata_client)

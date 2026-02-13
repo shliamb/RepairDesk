@@ -11,6 +11,7 @@ from handlers.admin import router as admin
 from handlers.search_client import router as search_client
 from handlers.search_order import router as search_order
 from handlers.actions_order import router as actions_order
+from handlers.statistics import router as statistics
 
 # from handlers.reports import router as reports
 
@@ -26,6 +27,7 @@ ALL_ROUTERS = [
     viewing_orders,
     edit_order,
     edit_client,
+    statistics,
     admin
     # reports,     # Отчёты
 ]

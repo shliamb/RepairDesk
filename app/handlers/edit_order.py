@@ -91,10 +91,12 @@ async def choose_status(message: types.Message, state: FSMContext):
         return
         
     state_data = await state.get_data()
+    new_status = revers[message.text]
     data = {
         "id": state_data.get("id"),
-        "status": revers[message.text]
+        "status": new_status
     }
+    if new_status == "ready": data["completion_date"] = datetime.now()
     await edit_order_db(data, state, message)
 
 

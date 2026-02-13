@@ -25,3 +25,48 @@ async def add_stat(fin_data: dict) -> bool:
         logger.error(f"Error adding fin stat: {e}")
         return False
 
+
+
+
+
+async def get_fin_stats(period: str = "years") -> list[dict]:
+    """
+    Получить финансовую статистику за период.
+    
+    Args:
+        period: Один из ['today', 'month', 'year', 'years']
+    
+    Returns:
+        Список записей с полями: id, payment_date, amount, category, ...
+    """
+    
+    query = """
+        SELECT 
+            *
+        FROM fin_stats
+        WHERE 1=1
+    """
+    
+    if period == "today":
+        query += " AND payment_date::date = CURRENT_DATE"
+    elif period == "month":
+        query += """
+            AND payment_date >= DATE_TRUNC('month', CURRENT_DATE)
+            AND payment_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+        """
+    elif period == "year":
+        query += """
+            AND payment_date >= DATE_TRUNC('year', CURRENT_DATE)
+            AND payment_date < DATE_TRUNC('year', CURRENT_DATE) + INTERVAL '1 year'
+        """
+    # period == "years" → возвращаем всё
+    
+    query += " ORDER BY payment_date DESC"
+    
+    records = await db.fetch(query)
+    return [dict(rec) for rec in records]
+
+
+
+
+

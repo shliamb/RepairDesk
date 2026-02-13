@@ -142,6 +142,8 @@ def create_tables_in_db():
 
         );
 
+        CREATE INDEX idx_fin_stats_payment_date ON fin_stats(payment_date);
+
         '''
         cursor.execute(create_table_fin_stats)
 

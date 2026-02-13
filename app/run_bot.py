@@ -1,9 +1,9 @@
 from config import TELEGRAM_BOT_TOKEN, ADMIN_ID, PROXY
-# from logs.set_logger import set_logger
-# logger = set_logger(name="bot")
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('aiogram').setLevel(logging.DEBUG)
+from logs.set_logger import set_logger
+logger = set_logger(name="bot")
+# import logging
+# logging.basicConfig(level=logging.DEBUG)
+# logging.getLogger('aiogram').setLevel(logging.DEBUG)
 from handlers import ALL_ROUTERS
 from database import db
 import asyncio
