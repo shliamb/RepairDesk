@@ -29,16 +29,22 @@ async def add_stat(fin_data: dict) -> bool:
 
 
 
-async def get_fin_stats(period: str = "years") -> list[dict]:
+async def get_payments(period: str = "years") -> list[dict]:
     """
-    Получить финансовую статистику за период.
+    Получить список заказов за период.
     
     Args:
-        period: Один из ['today', 'month', 'year', 'years']
+        period: 'today' | 'month' | 'year' | 'years'
     
     Returns:
-        Список записей с полями: id, payment_date, amount, category, ...
+        Список словарей с полями: id, payment_date, amount, category, description
+    
+    Raises:
+        ValueError: если period некорректен
     """
+    ALLOWED_PERIODS = {"today", "month", "year", "years"}
+    if period not in ALLOWED_PERIODS:
+        raise ValueError(f"Invalid period: {period}. Allowed: {ALLOWED_PERIODS}")
     
     query = """
         SELECT 
@@ -59,12 +65,13 @@ async def get_fin_stats(period: str = "years") -> list[dict]:
             AND payment_date >= DATE_TRUNC('year', CURRENT_DATE)
             AND payment_date < DATE_TRUNC('year', CURRENT_DATE) + INTERVAL '1 year'
         """
-    # period == "years" → возвращаем всё
+    # period == "years" → без дополнительных условий
     
     query += " ORDER BY payment_date DESC"
     
     records = await db.fetch(query)
     return [dict(rec) for rec in records]
+
 
 
 

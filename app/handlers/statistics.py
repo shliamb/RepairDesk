@@ -3,7 +3,7 @@ from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager, is_super_admin
 from database.users import add_user, get_user_by_tg
-from database.finstat import get_fin_stats
+from database.finstat import get_payments
 from utils.formatters import parse_cost, add_days_from_text, format_telegram_username
 from datetime import datetime
 from aiogram import Router, types, F
@@ -70,7 +70,7 @@ async def get_statistics_period(message: types.Message, state: FSMContext):
     
 
     if input_mes == UI_TEXTS[lang]["today"]:
-        period = "day"
+        period = "today"
     
     elif input_mes == UI_TEXTS[lang]["month"]:
         period = "month"
@@ -84,7 +84,7 @@ async def get_statistics_period(message: types.Message, state: FSMContext):
     else:
         return
 
-    data_orders = await get_fin_stats(period)
+    data_orders = await get_payments(period)
     print(data_orders)
     
 
