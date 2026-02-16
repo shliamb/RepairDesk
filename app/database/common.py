@@ -25,7 +25,8 @@ class Database:
                 max_size=50, # максимум 50 одновременных
                 max_queries=50000, # после 50к запросов - пересоздать соединение
                 timeout=30, # ждать свободное соединение 30 секунд
-                max_inactive_connection_lifetime=300  # закрывать неиспользуемые через 5 мин
+                max_inactive_connection_lifetime=300,  # закрывать неиспользуемые через 5 мин
+                server_settings={'timezone': 'Europe/Moscow'}
             )
             logger.info("Database pool created")
             print(await self.get_pool_stats())

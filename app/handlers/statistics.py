@@ -26,6 +26,7 @@ order = OrderService(db)
 
 class Statistic(StatesGroup):
     period = State()
+    filter = State()
 
 
 
@@ -48,7 +49,28 @@ async def cancel(message: types.Message, state: FSMContext):
 
 
 
+# GET STATISTICS PERIOD
+@router.message(Statistic.filter)
+async def get_period(message: types.Message, state: FSMContext):
+    """  """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    input_mes = message.text
+    state_data = await state.get_data()
+    data_orders = state_data.get("data_orders")
+    period = state_data.get("period")
 
+
+    if input_mes == UI_TEXTS[lang]['stats_orders_count']:
+        n = len(data_orders)
+        print(n)
+        return
+
+
+
+    # if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+    # else: await message.answer("🚫 Try again to select an item from the menu")
 
 
 
@@ -56,38 +78,30 @@ async def cancel(message: types.Message, state: FSMContext):
 
 # GET STATISTICS PERIOD
 @router.message(Statistic.period)
-async def get_statistics_period(message: types.Message, state: FSMContext):
+async def get_statistics(message: types.Message, state: FSMContext):
     """ Статистика за период """
     await typing(message)
     lang = message.from_user.language_code
     user_id = message.from_user.id
     input_mes = message.text
 
-    if not await is_super_admin(user_id):
-        if lang == "ru": await message.answer("🔐 Вы не имеете доступа!")
-        else: await message.answer("🔐 You don't have access")
-        return
-    
-
-    if input_mes == UI_TEXTS[lang]["today"]:
-        period = "today"
-    
-    elif input_mes == UI_TEXTS[lang]["month"]:
-        period = "month"
-
-    elif input_mes == UI_TEXTS[lang]["year"]:
-        period ="year"
-    
-    elif input_mes == UI_TEXTS[lang]["years"]:
-        period = "years"
-    
+    if input_mes == UI_TEXTS[lang]["today"]: period = "today"
+    elif input_mes == UI_TEXTS[lang]["month"]: period = "month"
+    elif input_mes == UI_TEXTS[lang]["year"]: period ="year"
+    elif input_mes == UI_TEXTS[lang]["years"]: period = "years"
     else:
+        if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
+        else: await message.answer("🚫 Try again to select an item from the menu")
         return
 
     data_orders = await get_payments(period)
     print(data_orders)
-    
 
+    if not data_orders:
+        if lang == "ru": await message.answer("🌀 Нет результатов")
+        else: await message.answer("🌀 No results")
+        return
+    
     buttons = [
         UI_TEXTS[lang]['stats_revenue'],
         UI_TEXTS[lang]['stats_orders_count'],
@@ -97,16 +111,19 @@ async def get_statistics_period(message: types.Message, state: FSMContext):
         UI_TEXTS[lang]["cancel"]
     ]
 
-    if lang == "ru": text = "Выберите условие:"
-    else: text = "Select a condition:"
+    await state.update_data(data_orders=data_orders, period=period)
+
+    if lang == "ru": text = "Выберите фильтр:"
+    else: text = "Select a filter:"
     await message.answer(text, reply_markup = build_keyboard(buttons)) 
+    await state.set_state(Statistic.filter)
     
 
 
 
-# GET STATISTICS
+# RUN STATISTICS PROCESS
 @router.message((F.text == UI_TEXTS["en"]['stat']) | (F.text == UI_TEXTS["ru"]['stat']))
-async def get_statistics(message: types.Message, state: FSMContext):
+async def run_statistics(message: types.Message, state: FSMContext):
     """ Статистика для админов"""
     await typing(message)
     lang = message.from_user.language_code
@@ -117,8 +134,8 @@ async def get_statistics(message: types.Message, state: FSMContext):
         else: await message.answer("🔐 You don't have access")
         return
     
-    if lang == "ru": text = "Выберите условие:"
-    else: text = "Select a condition:"
+    if lang == "ru": text = "Выберите период:"
+    else: text = "Select a period:"
     await message.answer(text, reply_markup = build_keyboard([UI_TEXTS[lang]["today"], UI_TEXTS[lang]["month"], UI_TEXTS[lang]["year"], UI_TEXTS[lang]["years"], UI_TEXTS[lang]["cancel"]])) 
     
     await state.set_state(Statistic.period)
