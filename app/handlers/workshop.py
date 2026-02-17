@@ -53,7 +53,7 @@ async def workshop_panel(message: types.Message, state: FSMContext):
         f"{UI_TEXTS[lang]['last_orders']} {all}", 
         f"{UI_TEXTS[lang]['ready_orders']} {ready}",
         f"{UI_TEXTS[lang]['issued']} {complet}",
-        f"{UI_TEXTS[lang]['stat']}", 
+        UI_TEXTS[lang]['stat'], 
         UI_TEXTS[lang]["cancel"]
     ])
 

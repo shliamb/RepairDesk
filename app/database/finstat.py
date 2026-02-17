@@ -29,6 +29,16 @@ async def add_stat(fin_data: dict) -> bool:
 
 
 
+async def get_fin_stats_db() -> list[dict]:
+    """Выгрузить все записи fin_stats"""
+
+    query = "SELECT * FROM fin_stats ORDER BY payment_id"
+    records = await db.fetch(query)
+    return [dict(rec) for rec in records]
+
+
+
+
 async def get_payments(period: str = "years") -> list[dict]:
     """
     Получить список заказов за период.

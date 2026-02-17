@@ -556,10 +556,27 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
         await state.set_state(Edit.prepayment)
 
 
+    # GET ACTION
+    elif message.text in UI_TEXTS[lang]["action"]:
+        state_data = await state.get_data()
+        id = state_data.get("id")
+
+        buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["delet"], UI_TEXTS[lang]["cancel"]]
+        if lang == "ru": intro_text = f"Выберите действие по заказу:"
+        else: intro_text = f"Select the order action:"
+
+        await message.answer(intro_text, reply_markup = build_keyboard(buttons))
+        await state.update_data(id=id)
+        await state.set_state(Order.action)
+        
+
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
         return
+    
+
+
 
 
 
@@ -962,10 +979,10 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
     if lang == "ru":
         message_text = "Выберите то, что хотите изменить:"
 
-        buttons = [EDIT_ORDER["stat_ru"], EDIT_ORDER["dia_ru"], EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_part_ru"], EDIT_ORDER["notes_ru"], EDIT_ORDER["prepayment_ru"], EDIT_ORDER["clear_ru"], CANCEL["ru"]]
+        buttons = [EDIT_ORDER["stat_ru"], EDIT_ORDER["dia_ru"], EDIT_ORDER["add_serv_ru"], EDIT_ORDER["add_part_ru"], EDIT_ORDER["notes_ru"], EDIT_ORDER["prepayment_ru"], EDIT_ORDER["clear_ru"], UI_TEXTS[lang]["action"], CANCEL["ru"]]
     else:
         message_text = "Select what you want to change:"
-        buttons = [EDIT_ORDER["stat"], EDIT_ORDER["dia"], EDIT_ORDER["add_serv"], EDIT_ORDER["add_part"], EDIT_ORDER["notes"], EDIT_ORDER["prepayment"], EDIT_ORDER["clear"], CANCEL["en"]]
+        buttons = [EDIT_ORDER["stat"], EDIT_ORDER["dia"], EDIT_ORDER["add_serv"], EDIT_ORDER["add_part"], EDIT_ORDER["notes"], EDIT_ORDER["prepayment"], EDIT_ORDER["clear"], UI_TEXTS[lang]["action"], CANCEL["en"]]
     await message.answer(message_text, reply_markup = build_keyboard(buttons))
 
     await state.update_data(id=id, order_number=id)

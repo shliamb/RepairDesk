@@ -13,6 +13,7 @@ from database.create_tables import create_tables_in_db
 from database.deleted_tables_db import drop_all_tables_and_reset_schema
 from database.json_clients_db import get_json_clients_db, push_json_clients_in_db
 from database.json_orders_db import get_json_orders_db, push_json_orders_in_db
+from database.json_fin_stat import get_json_fin_stats_db, push_json_fin_stats_in_db
 from database.migration_livesklad import parse_xls_get_json
 from database import db
 import os
@@ -67,6 +68,8 @@ async def admin_menu(message: types.Message):
         f"        • Add Users – /resUs\n"
         f"        • Down Orders – /dnlOrd\n"
         f"        • Add Orders – /resOrd\n"
+        f"        • Down FinStat – /dnlStat\n"
+        f"        • Add FinStat – /resStat\n"
         f"        • Get JSON from livesklad – /Skl\n\n"
         # f"<b>💳 METHODS PAY:</b>\n"
         # f"        Add Metod – /addMe\n"
@@ -96,6 +99,8 @@ async def admin_menu(message: types.Message):
         f"        • Доб. Польз. – /resUs\n"
         f"        • Скачать Заказы – /dnlOrd\n"
         f"        • Доб. Заказы – /resOrd\n"
+        f"        • Скачать Фин.стат – /dnlStat\n"
+        f"        • Доб. Фин.стат – /resStat\n"
         f"        • Созд. JSON из livesklad – /Skl\n\n"
         # f"<b>💳 METHODS PAY:</b>\n"
         # f"        Add Metod – /addMe\n"
@@ -266,6 +271,32 @@ async def get_json_orders(message: types.Message):
         )
 
 
+# GET FIN STAT to JSON:
+@router.message(Command('dnlStat'))
+async def get_json_finstat(message: types.Message):
+    """ Вытягиваю из DB всю Финансовую статистику в JSON """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await rights_verification(user_id, lang, message): return
+
+    filepath = await get_json_fin_stats_db()
+
+    if not filepath:
+        if lang == "ru": await message.answer("🚫 Ошибка при сборе фин. статистики в JSON файл")
+        else: await message.answer("🚫 Error when collecting fin-statiistic data in a JSON file")
+        return
+
+    if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+
+        await message.reply_document(
+            document=types.input_file.FSInputFile(filepath),
+            caption="Get JSON file an FIN. STATISTIC"
+        )
+
+
+
+
 
 
 # PUSH JSON DATA to DB:
@@ -323,6 +354,27 @@ async def json_to_db(message: types.Message, state: FSMContext):
             if lang == "ru": await message.answer("🚫 Ошибка переноса из JSON заказов")
             else: await message.answer("🚫 Error transferring orders from JSON")
 
+
+    # FINSTAT
+    elif restore == "finstat":
+        if not message.document or not message.document.file_name.endswith('.json'):
+            if lang == "ru": await message.answer("🚫 Прикрепите JSON файл фин. статистики")
+            else: await message.answer("🚫 Attach a JSON file fin. statistic")
+            return
+        
+        filename = os.path.join(DOWNLOAD, f"uploaded-json-finstat.json")
+        filepath = os.path.join(os.getcwd(), filename)
+        await message.bot.download(message.document, filepath)
+
+        good_case, bad_case = await push_json_fin_stats_in_db(filepath)
+        if good_case is not False or bad_case is not False:
+            if lang == "ru": await message.answer(f"🎉 Результаты переноса из JSON фин. статистики: успешно ({good_case}), ошибка ({bad_case})")
+            else: await message.answer(f"🎉 The results of transferring fin. statistic from JSON: successful ({good_case}), error ({bad_case})")
+        else:
+            if lang == "ru": await message.answer("🚫 Ошибка переноса из JSON фин. статистики")
+            else: await message.answer("🚫 Error transferring fin/ statistic from JSON")
+
+
     # LIVESKLAD
     elif restore == "livesklad":
         if not message.document or not message.document.file_name.lower().endswith(('.xlsx', '.xls')):
@@ -375,6 +427,21 @@ async def push_json_orders_to_db(message: types.Message, state: FSMContext):
     await state.set_state(Restore_json.load_json)
 
 
+# PUSH JSON FIN STATISTIC to DB:
+@router.message(Command('resStat'))
+async def push_json_finstat_to_db(message: types.Message, state: FSMContext):
+    """ Перенос JSON финансовой статистики в базу """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    if not await rights_verification(user_id, lang, message): return
+
+    await state.update_data(restore="finstat")
+    if lang == "ru": await message.answer("📎 Прикрепите JSON файл:", reply_markup=ReplyKeyboardRemove())
+    else: await message.answer("📎 Attach a JSON file:", reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Restore_json.load_json)
+
+
 # PUSH PARSE DATA FROM XLSX LIVESKLAD:
 @router.message(Command('Skl'))
 async def parse_livesklad(message: types.Message, state: FSMContext):
@@ -395,64 +462,3 @@ async def parse_livesklad(message: types.Message, state: FSMContext):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-# # Admin Restore Users to DB in Json
-# class Restore_json(StatesGroup):
-#     load_json = State()
-
-# # Resore OLD users to DB:
-# @dp.message(Command('resUs'))
-# async def restore_old_users_admin(message: types.Message, state: FSMContext):
-#     await typing(message)
-#     id = user_id(message)
-
-#     if id != ADMIN_ID:
-#         logger_bot.error(f"This {id} shit made an attempt to enter to Admin Panel.")
-#         return
-
-#     await bot.send_message(message.chat.id, "Attach and send the necessary json file for recovery Users to DB.", parse_mode="Markdown", reply_markup=ReplyKeyboardRemove()) 
-#     await state.set_state(Restore_json.load_json)
-
-
-# @dp.message(Restore_json.load_json)
-# async def load_json_users_to_db(message: Message, state: FSMContext):
-#     await typing(message)
-#     id = user_id(message)
-    
-#     if not isinstance(message.document, types.Document):
-#         await message.answer("It's not a documents")
-#         return
-
-#     file_extension = message.document.file_name.split('.')[-1]
-#     allowed_extensions = ['json']
-
-#     if file_extension not in allowed_extensions:
-#         await message.answer("You have sent a non-json extension file.")
-#         return 
-
-#     file_name = f"uploaded-json-restore-users.json"
-#     file_path = f"{PATH_JSON_USERS}{file_name}"
-#     await bot.download(message.document, file_path)
-
-#     await bot.session.close()
-#     await dp.storage.close()
-
-
-#     res_update_db = await restore_loyal_users_to_db(file_path)
-
-#     if res_update_db:
-#         await message.answer(f"Results of adding regular Users to DB:\n{res_update_db}")
-#     else:
-#         await message.answer(f"Error of adding regular Users to DB:\n{res_update_db}")
-
-#     await state.clear()

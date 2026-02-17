@@ -94,6 +94,9 @@ async def get_period(message: types.Message, state: FSMContext):
         stats = calc_by_device(data_orders)
         text = format_by_device(lang, stats)
 
+    elif input_mes == UI_TEXTS[lang]['back']:
+        await run_statistics(message, state)
+
     else:
         if lang == "ru":
             await message.answer("🚫 Пожалуйста, выберите пункт из меню.")
@@ -102,19 +105,10 @@ async def get_period(message: types.Message, state: FSMContext):
         return
 
     # Экранируем текст, чтобы избежать ошибок с HTML-сущностями
+    if not text: return
+
     import html
     await message.answer(html.escape(text), parse_mode=None)
-
-    buttons = [
-        UI_TEXTS[lang]['stats_revenue'],
-        UI_TEXTS[lang]['stats_orders_count'],
-        UI_TEXTS[lang]['stats_payment_methods'],
-        UI_TEXTS[lang]['stats_by_master'],
-        UI_TEXTS[lang]['stats_by_device'],
-        UI_TEXTS[lang]["cancel"]
-    ]
-    await message.answer("Выберите фильтр:" if lang == "ru" else "Select a filter:",
-                         reply_markup=build_keyboard(buttons))
 
 
 
@@ -401,6 +395,7 @@ async def get_statistics(message: types.Message, state: FSMContext):
         UI_TEXTS[lang]['stats_payment_methods'],
         UI_TEXTS[lang]['stats_by_master'],
         UI_TEXTS[lang]['stats_by_device'],
+        UI_TEXTS[lang]['back'],
         UI_TEXTS[lang]["cancel"]
     ]
 
@@ -428,6 +423,12 @@ async def run_statistics(message: types.Message, state: FSMContext):
     
     if lang == "ru": text = "Выберите период:"
     else: text = "Select a period:"
-    await message.answer(text, reply_markup = build_keyboard([UI_TEXTS[lang]["today"], UI_TEXTS[lang]["month"], UI_TEXTS[lang]["year"], UI_TEXTS[lang]["years"], UI_TEXTS[lang]["cancel"]])) 
+    await message.answer(text, reply_markup = build_keyboard([
+        UI_TEXTS[lang]["today"], 
+        UI_TEXTS[lang]["month"], 
+        UI_TEXTS[lang]["year"], 
+        UI_TEXTS[lang]["years"],
+        UI_TEXTS[lang]["cancel"]
+        ])) 
     
     await state.set_state(Statistic.period)
