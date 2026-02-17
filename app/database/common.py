@@ -1,4 +1,4 @@
-from config import HOST, USER_DB, PASSWORD_DB, DB_NAME
+from config import HOST, USER_DB, PASSWORD_DB, DB_NAME, TIME_ZONE
 from logs.set_logger import set_logger
 logger = set_logger(name="db")
 import asyncpg
@@ -26,7 +26,7 @@ class Database:
                 max_queries=50000, # после 50к запросов - пересоздать соединение
                 timeout=30, # ждать свободное соединение 30 секунд
                 max_inactive_connection_lifetime=300,  # закрывать неиспользуемые через 5 мин
-                server_settings={'timezone': 'Europe/Moscow'}
+                server_settings={'timezone': TIME_ZONE}
             )
             logger.info("Database pool created")
             print(await self.get_pool_stats())

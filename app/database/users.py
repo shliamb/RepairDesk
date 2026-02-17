@@ -44,6 +44,16 @@ async def get_user_by_user_id(user_id: uuid) -> dict:
     return {}
 
 
+async def get_users_by_ids(user_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict]:
+    """Получить нескольких пользователей по их UUID. Возвращает словарь {user_id: record_dict}"""
+    if not user_ids:
+        return {}
+    placeholders = ','.join(f"${i+1}" for i in range(len(user_ids)))
+    query = f"SELECT * FROM users WHERE user_id IN ({placeholders})"
+    records = await db.fetch(query, *user_ids)
+    return {rec['user_id']: dict(rec) for rec in records}
+
+
 async def get_all_users() -> list:
     """Получить всех пользователей users"""
     query = f"SELECT * FROM users"
