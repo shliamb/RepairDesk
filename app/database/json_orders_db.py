@@ -88,7 +88,7 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
                 "problem": order.get("problem"),
                 "appearance": order.get("appearance"),
                 "created_date": json_decoder(order.get("created_date")),
-                "completion_date": order.get("completion_date"),
+                "completion_date": json_decoder(order.get("completion_date")),
                 "diagnosis_before": json_decoder(order.get("diagnosis_before")),
 
                 "diagnosis": order.get("diagnosis"),
@@ -175,7 +175,7 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
                     if not await edit_client(client_update_data):
                         print("Error ошибка обновления данных клиента")
                     
-                    print("client_update_data:", client_update_data)
+                    #print("client_update_data:", client_update_data)
 
 
                 else:

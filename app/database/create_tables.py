@@ -123,7 +123,7 @@ def create_tables_in_db():
         create_table_fin_stats = '''
         CREATE TABLE IF NOT EXISTS fin_stats (
             payment_id SERIAL PRIMARY KEY,
-            order_id INTEGER REFERENCES orders(id),                                             -- Порядковый id заказа
+            order_id INTEGER NOT NULL,                                                          -- Порядковый id заказа, при переносе JSON не совпадет
             client_id UUID REFERENCES users(user_id),                                           -- UUID клиента
             master_id UUID REFERENCES users(user_id),                                           -- UUID мастера
             

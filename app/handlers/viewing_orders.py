@@ -3,7 +3,7 @@ from handlers.common import typing, is_manager
 from handlers.workshop import workshop_panel
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import format_date_nice
+from utils.formatters import format_date_nice, safe_decimal
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
@@ -301,6 +301,16 @@ async def get_ready_orders(message: types.Message, state: FSMContext):
     # Собрать Готовые Заказы из базы
     records = await order.get_orders_by_statuses(READY_STATUSES)
     await push_orders_bot(message, state, lang, records)
+
+    # Выдать сумму ожидаемую к оплате:
+    amount = 0
+    for rec in records:
+        net_profit = safe_decimal(rec.get("net_profit")) or 0
+        amount += net_profit
+    
+    if lang == "ru": await message.answer(f"💰 Потенциально к оплате: {amount} {CURRENCY}")
+    else: await message.answer(f"💰 Potential payment: {amount} {CURRENCY}")
+
 
 
 

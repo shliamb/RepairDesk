@@ -2,14 +2,14 @@
 # pip install pandas openpyxl
 from logs.set_logger import set_logger
 logger = set_logger(name="jsonsklad")
-from config import PATH_JSON
+from config import PATH_JSON, ADMIN_ID
 from datetime import datetime
 from utils.serialize import json_serializer, json_decoder
+from database.users import get_user_by_tg
 import pandas as pd
 from database import db
 import json
 import os
-
 
 
 # SAVE JSON
@@ -56,6 +56,9 @@ async def parse_xls_get_json(filepath: str) -> tuple:
         формирования JSON фалов для добавления в базу """
     json_users_data, json_orders_data = [], []
 
+    data_created_by = await get_user_by_tg(ADMIN_ID)
+    created_by = data_created_by.get("user_id")
+
     data = parse_xlsx(filepath)
     for row in data:
 
@@ -83,6 +86,8 @@ async def parse_xls_get_json(filepath: str) -> tuple:
             "cost_repair": row['Оплачено по заказу'],
             "created_date": row['Дата создания'],
             "date_of_issue": row['Дата выдачи'],
+            "created_by": created_by,
+            "order_id": 555 # Попробую так..
         }
 
         json_orders_data.append(order_data)

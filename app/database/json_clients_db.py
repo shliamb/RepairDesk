@@ -71,7 +71,7 @@ async def push_json_clients_in_db(file_path: str) -> tuple:
 
         for user in users_json:
             user_data = {
-                "user_id": json_decoder(user.get("user_id")),
+                "user_id": json_decoder(user.get("user_id")), # UUID constant !!!!
 
                 "user_glotmax": user.get("user_glotmax"),
                 "user_whatsapp": user.get("user_whatsapp"),

@@ -4,12 +4,10 @@ logger = set_logger(name="jsonFinStat")
 import os
 import json
 from datetime import datetime
-from database import db
 from utils.serialize import json_serializer, json_decoder
 from database.finstat import get_fin_stats_db, add_stat
+from database.users import get_user_by_user_id
 from config import PATH_JSON
-
-
 
 
 async def get_json_fin_stats_db() -> str | bool:
@@ -31,6 +29,7 @@ async def get_json_fin_stats_db() -> str | bool:
     
     except Exception as e:
         logger.error(f"Error saving fin_stats to JSON: {e}")
+        print(f"Error saving fin_stats to JSON: {e}")
         return False
 
 
@@ -39,138 +38,98 @@ async def get_json_fin_stats_db() -> str | bool:
 
 async def push_json_fin_stats_in_db(file_path: str) -> tuple[int, int]:
     """Импорт финансовых записей из JSON-файла в БД"""
-    good, bad = 0, 0
+    good_case, bad_case = 0, 0
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             records = json.load(f)
+
     except Exception as e:
         logger.error(f"Error reading JSON file: {e}")
+        print(f"Error reading JSON file: {e}")
         return 0, 0
 
     for rec in records:
         try:
-            # Декодируем специальные типы (datetime, Decimal, UUID) – функция json_decoder должна быть
-            decoded_rec = {}
-            for key, value in rec.items():
-                decoded_rec[key] = json_decoder(value) if value is not None else None
+            # Декодируем специальные типы
+            order_id = json_decoder(rec.get("order_id"))          # int
+            client_id = json_decoder(rec.get("client_id"))        # UUID
+            master_id = json_decoder(rec.get("master_id"))        # UUID
+            who_issued = json_decoder(rec.get("who_issued"))      # UUID
 
-            # Удаляем payment_id, если он есть – пусть база сама назначает новый
-            decoded_rec.pop('payment_id', None)
+            payment_amount = json_decoder(rec.get("payment_amount"))  # Decimal
+            net_profit = json_decoder(rec.get("net_profit"))          # Decimal
+            payment_method = rec.get("payment_method")
 
-            # Вставляем через add_stat
-            if await add_stat(decoded_rec):
-                good += 1
-            else:
-                bad += 1
+            payment_date = json_decoder(rec.get("payment_date"))               # datetime
+            order_created_date = json_decoder(rec.get("order_created_date"))   # datetime
+            order_completed_date = json_decoder(rec.get("order_completed_date")) # datetime
+
+            device_type = rec.get("device_type")
+            device_model = rec.get("device_model")
+            repair_type = rec.get("repair_type")
+
+            # Проверка обязательных полей
+            if not all([order_id, client_id, master_id, who_issued]):
+                print("Error Checking required fields: \n", "order_id:", order_id, "client_id:", client_id, "master_id:", master_id, "who_issued:", 
+                      who_issued, "payment_amount:", payment_amount, "net_profit:", net_profit, "payment_method:", payment_method)
+                bad_case += 1
+                continue
+
+            # Проверка существования связанных элементов
+            # Проверяем заказ - безсмысленно, меняется при переносе через JSON
+
+            # Проверяем клиента
+            client_exists = await get_user_by_user_id(client_id)
+            if not client_exists:
+                logger.warning(f"Client {client_id} not found, skipping fin_stats record")
+                print(f"Client {client_id} not found, skipping fin_stats record")
+                bad_case += 1
+                continue
+
+            # Проверяем мастера
+            master_exists = await get_user_by_user_id(master_id)
+            if not master_exists:
+                logger.warning(f"Master {master_id} not found, skipping fin_stats record")
+                print(f"Master {master_id} not found, skipping fin_stats record")
+                bad_case += 1
+                continue
+
+            # Проверяем who_issued
+            issuer_exists = await get_user_by_user_id(who_issued)
+            if not issuer_exists:
+                logger.warning(f"Issuer {who_issued} not found, skipping fin_stats record")
+                print(f"Issuer {who_issued} not found, skipping fin_stats record")
+                bad_case += 1
+                continue
+
+            # Вставляем запись (без payment_id – пусть serial сам проставится)
+            stat_data = {
+                "order_id": order_id, # Со старой базы, не совпадет, такова жизнь..
+                "client_id": client_id,
+                "master_id": master_id,
+                "who_issued": who_issued,
+                "payment_amount": payment_amount,
+                "net_profit": net_profit,
+                "payment_method": payment_method,
+                "payment_date": payment_date,
+                "order_created_date": order_created_date,
+                "order_completed_date": order_completed_date,
+                "device_type": device_type,
+                "device_model": device_model,
+                "repair_type": repair_type
+            }
+            if not await add_stat(stat_data):
+                logger.error("Error add_stat")
+                print("Error add_stat")
+            good_case += 1
+
         except Exception as e:
-            logger.error(f"Error processing fin_stats record: {e}")
-            bad += 1
+            logger.error(f"Error inserting fin_stats record: {e}")
+            print(f"Error inserting fin_stats record: {e}")
+            bad_case += 1
 
-    logger.info(f"Fin_stats import: good={good}, bad={bad}")
-    return good, bad
+    logger.info(f"Fin_stats import: good={good_case}, bad={bad_case}")
+    print(f"Fin_stats import: good={good_case}, bad={bad_case}")
+    return good_case, bad_case
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# async def push_json_fin_stats_in_db(file_path: str) -> tuple[int, int]:
-#     """Импортировать записи fin_stats из JSON-файла"""
-#     good_case, bad_case = 0, 0
-
-#     try:
-#         with open(file_path, 'r', encoding='utf-8') as f:
-#             records = json.load(f)
-#     except Exception as e:
-#         logger.error(f"Error reading JSON file: {e}")
-#         return 0, 0
-
-#     if not records:
-#         return 0, 0
-
-#     for rec in records:
-#         try:
-#             # Декодируем специальные типы
-#             order_id = json_decoder(rec.get("order_id"))          # int
-#             client_id = json_decoder(rec.get("client_id"))        # UUID
-#             master_id = json_decoder(rec.get("master_id"))        # UUID
-#             who_issued = json_decoder(rec.get("who_issued"))      # UUID
-
-#             payment_amount = json_decoder(rec.get("payment_amount"))  # Decimal
-#             net_profit = json_decoder(rec.get("net_profit"))          # Decimal
-#             payment_method = rec.get("payment_method")
-
-#             payment_date = json_decoder(rec.get("payment_date"))               # datetime
-#             order_created_date = json_decoder(rec.get("order_created_date"))   # datetime
-#             order_completed_date = json_decoder(rec.get("order_completed_date")) # datetime
-
-#             device_type = rec.get("device_type")
-#             device_model = rec.get("device_model")
-#             repair_type = rec.get("repair_type")
-
-#             # Проверка обязательных полей
-#             if not all([order_id, client_id, master_id, who_issued,
-#                         payment_amount, net_profit, payment_method]):
-#                 bad_case += 1
-#                 continue
-
-#             # Проверка существования связанных записей (опционально, но желательно)
-#             # Проверяем заказ
-#             order_exists = await db.fetchval("SELECT 1 FROM orders WHERE id = $1", order_id)
-#             if not order_exists:
-#                 logger.warning(f"Order {order_id} not found, skipping fin_stats record")
-#                 bad_case += 1
-#                 continue
-
-#             # Проверяем клиента
-#             client_exists = await db.fetchval("SELECT 1 FROM users WHERE user_id = $1", client_id)
-#             if not client_exists:
-#                 logger.warning(f"Client {client_id} not found, skipping fin_stats record")
-#                 bad_case += 1
-#                 continue
-
-#             # Проверяем мастера
-#             master_exists = await db.fetchval("SELECT 1 FROM users WHERE user_id = $1", master_id)
-#             if not master_exists:
-#                 logger.warning(f"Master {master_id} not found, skipping fin_stats record")
-#                 bad_case += 1
-#                 continue
-
-#             # Проверяем who_issued
-#             issuer_exists = await db.fetchval("SELECT 1 FROM users WHERE user_id = $1", who_issued)
-#             if not issuer_exists:
-#                 logger.warning(f"Issuer {who_issued} not found, skipping fin_stats record")
-#                 bad_case += 1
-#                 continue
-
-#             # Вставляем запись (без payment_id – пусть serial сам проставится)
-#             insert_query = """
-#                 INSERT INTO fin_stats (
-#                     order_id, client_id, master_id, payment_amount, net_profit,
-#                     payment_method, payment_date, order_created_date, order_completed_date,
-#                     who_issued, device_type, device_model, repair_type
-#                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-#             """
-#             await db.execute(
-#                 insert_query,
-#                 order_id, client_id, master_id, payment_amount, net_profit,
-#                 payment_method, payment_date, order_created_date, order_completed_date,
-#                 who_issued, device_type, device_model, repair_type
-#             )
-#             good_case += 1
-
-#         except Exception as e:
-#             logger.error(f"Error inserting fin_stats record: {e}")
-#             bad_case += 1
-
-#     logger.info(f"Fin_stats import: good={good_case}, bad={bad_case}")
-#     return good_case, bad_case
