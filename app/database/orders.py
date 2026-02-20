@@ -89,6 +89,12 @@ class OrderService:
         return {}
     
     
+    async def get_next_order_id(self) -> int:
+        """Получить следующий ID из последовательности orders_id_seq без вставки"""
+        query = "SELECT nextval('orders_id_seq')"
+        return await self.db.fetchval(query)
+
+
     async def delete_order_cascade(self, order_id: int) -> bool:
         """Удалить заказ и связанные с ним записи"""
         async with self.db.pool.acquire() as conn:

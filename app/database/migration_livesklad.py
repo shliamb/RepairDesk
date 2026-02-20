@@ -5,11 +5,19 @@ logger = set_logger(name="jsonsklad")
 from config import PATH_JSON, ADMIN_ID
 from datetime import datetime
 from utils.serialize import json_serializer, json_decoder
-from database.users import get_user_by_tg
+from utils.formatters import convert_date_format, format_phone
+from database.users import get_user_by_phone, get_user_by_tg
+# from database.users import get_user_by_tg
 import pandas as pd
+from database.orders import OrderService
 from database import db
 import json
+import uuid
 import os
+
+
+orders = OrderService(db)
+
 
 
 # SAVE JSON
@@ -41,6 +49,7 @@ async def save_json_file(name: str, json_data: list) -> str | bool:
         return False
 
 
+
 # PARSE XLSX
 def parse_xlsx(file_path: str) -> list[dict]:
     """ Парсинг xlsx """
@@ -49,31 +58,59 @@ def parse_xlsx(file_path: str) -> list[dict]:
     return df.to_dict('records')
 
 
+
 # GET JSON FROM XLSX SKLAD
 async def parse_xls_get_json(filepath: str) -> tuple:
     """ Получение xlsx файла от livesklad, 
         парсинг, сбор клиентов и заказов для 
         формирования JSON фалов для добавления в базу """
-    json_users_data, json_orders_data = [], []
+    json_users_data, json_orders_data, json_finstat_data = [], [], []
+    next_id_order = await orders.get_next_order_id()
+    dat_admin = await get_user_by_tg(ADMIN_ID)
+    admin_uuid = dat_admin.get("user_id") 
 
-    data_created_by = await get_user_by_tg(ADMIN_ID)
-    created_by = data_created_by.get("user_id")
+
 
     data = parse_xlsx(filepath)
     for row in data:
 
+        user_id = None
+
+        phone_client = format_phone(row['Телефон'])
+        if phone_client:
+            data_client = await get_user_by_phone(phone_client)
+
+            if data_client:
+                user_id = data_client.get("user_id")
+
+            else:
+                for one_row in json_users_data:
+                    if phone_client == one_row.get("phone"):
+                        user_id = one_row.get("user_id")
+
+        if not user_id:
+            user_id = uuid.uuid4() # Генерирую сразу что бы связать с заказом
+
+        name_client = row['Имя']
+
+        # CLIENT DATA:
         user_data = {
-            "name": row['Имя'],
-            "phone": row['Телефон'],
-            "real_name": row['Имя'],
+            "user_id": user_id,
+            "name": name_client,
+            "phone": phone_client,
+            "real_name": name_client,
             "total_spent": None,
-            "repair_count_total": None
+            "repair_count_total": None,
+            "description_user": "moved from live sklad"
         }
 
         json_users_data.append(user_data)
 
+
+        # ORDER DATA:
         order_data = {
-            "phone": row['Телефон'],
+            "id": next_id_order,
+            "phone": phone_client,
             "sn_imei": row['Серийный номер / IMEI'],
             "status": "issued", #row['Статус'],
             "order_type": "paid", # row['Тип заказа'],
@@ -81,17 +118,42 @@ async def parse_xls_get_json(filepath: str) -> tuple:
             "device_brand": row['Марка'],
             "device_model": row['Модель'],
             # "equipment": row['Комплектация'],
-            "problem": row['Неисправность'],
+            "problem": f"[{row['Неисправность']}]",
             # "services": row['Выполненные работы'],
             "cost_repair": row['Оплачено по заказу'],
-            "created_date": row['Дата создания'],
-            "date_of_issue": row['Дата выдачи'],
-            "created_by": created_by,
-            "order_id": 555 # Попробую так..
+            "created_date": convert_date_format(row['Дата создания']),
+            "date_of_issue": convert_date_format(row['Дата выдачи']),
+            "created_by": ADMIN_ID, # telegram id ого, кто создал запись
+            # "order_id": 555, # Попробую так..
+            "client_id": user_id,
+            "real_name_client": name_client,
         }
 
         json_orders_data.append(order_data)
 
+        # FINSTAT DATA:
+        finstat_data = {
+            "order_id": next_id_order, # ! INTEGER
+            "client_id": user_id, # ! UUID users table
+            "master_id": admin_uuid, # ! UUID users table
+
+            "payment_amount": row['Оплачено по заказу'], # ! DECIMAL(10,2)
+            "net_profit": row['Оплачено по заказу'], # ! DECIMAL(10,2)
+            "payment_method": "cash", # ! STR
+
+            "payment_date": convert_date_format(row['Дата выдачи']), # DEFAULT TIMESTAMP
+            "order_created_date": convert_date_format(row['Дата создания']), # DEFAULT
+            "order_completed_date": convert_date_format(row['Дата выдачи']), # DEFAULT
+            "who_issued": admin_uuid, # ! UUID users table
+
+            "device_type": row['Тип устройства'],
+            "device_model": row['Модель'],
+            "repair_type": "paid"
+        }
+
+        json_finstat_data.append(finstat_data)
+
+        next_id_order += 1
 
     if json_users_data:
         users_filepath = await save_json_file("users_livesklad",json_users_data)
@@ -100,7 +162,10 @@ async def parse_xls_get_json(filepath: str) -> tuple:
     if json_orders_data:
         orders_filepath = await save_json_file("orders_livesklad", json_orders_data)
 
-    return users_filepath, orders_filepath
+    if json_finstat_data:
+        finstat_filepath = await save_json_file("finstat_livesklad", json_finstat_data)
+
+    return users_filepath, orders_filepath, finstat_filepath
 
 
 

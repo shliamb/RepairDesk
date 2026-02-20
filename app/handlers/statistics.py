@@ -289,7 +289,6 @@ def format_orders_count_monthly(lang, monthly_result):
 
 
 def group_by_year(data_orders):
-    """Группирует заказы по году из payment_date"""
     yearly = {}
     for order in data_orders:
         year = order['payment_date'].year
@@ -297,6 +296,8 @@ def group_by_year(data_orders):
             yearly[year] = []
         yearly[year].append(order)
     return yearly
+
+
 
 def calc_revenue_yearly(yearly_data):
     result = {}
@@ -376,6 +377,8 @@ async def get_statistics(message: types.Message, state: FSMContext):
 
     monthly_data = None
     yearly_data = None
+
+
     if period == "year":
         monthly_data = {}
         for order in data_orders:
@@ -383,8 +386,12 @@ async def get_statistics(message: types.Message, state: FSMContext):
             if month not in monthly_data:
                 monthly_data[month] = []
             monthly_data[month].append(order)
+
     elif period == "years":
-        yearly_data = group_by_year(data_orders)
+        # Отфильтровываем заказы без payment_date
+        filtered_orders = [o for o in data_orders if o.get('payment_date')]
+        yearly_data = group_by_year(filtered_orders)
+        
 
     await state.update_data(data_orders=data_orders, period=period, 
                             monthly_data=monthly_data, yearly_data=yearly_data)

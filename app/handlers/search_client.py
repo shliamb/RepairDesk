@@ -2,7 +2,7 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
-from database.users import search_clients
+from database.users import search_clients, get_users_count
 from handlers.edit_client import start_edit_client
 from utils.formatters import format_date_nice, remove_emojis, extract_emoji, clean_user_input, format_telegram_username, format_phone
 from utils.parse import detect_search_field
@@ -198,10 +198,11 @@ async def start_search_client(message: types.Message, state: FSMContext):
     """ Запуск поиска клиента в базе """
     await typing(message)
     lang = message.from_user.language_code
+    count = await get_users_count()
 
-    if lang == "ru": text = "🔎 Введите Имя, Фамилию, телеграмм (@username), телефон, часть данных:"
-    else: text = "🔎 Enter: Name, telegram (@username), phone, or part of data:"
+    if lang == "ru": text = f"🔎 <b>Всего {count} пользователей</b>\nВведите Имя, Фамилию, телеграмм (@username), телефон, часть данных:"
+    else: text = f"🔎 <b>Total {count} users</b>\n Enter: Name, telegram (@username), phone, or part of data:"
 
-    await message.answer(text, reply_markup = build_keyboard([UI_TEXTS[lang]['cancel']]))
+    await message.answer(text, reply_markup = build_keyboard([UI_TEXTS[lang]['cancel']]), parse_mode="HTML")
     await state.set_state(Client.search)
 

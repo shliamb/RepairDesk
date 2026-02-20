@@ -5,7 +5,16 @@ from decimal import Decimal, InvalidOperation
 
 
 
-
+def convert_date_format(date_str: str) -> str:
+    """
+    Конвертирует дату из формата "дд.мм.гггг чч:мм" в "гггг-мм-ддTчч:мм:сс.µµµµµµ"
+    """
+    try:
+        dt = datetime.strptime(date_str, "%d.%m.%Y %H:%M")
+        return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
+    except (ValueError, TypeError):
+        # Если формат не совпадает или None, возвращаем как есть
+        return date_str
 
 
 

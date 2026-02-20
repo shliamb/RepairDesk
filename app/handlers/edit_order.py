@@ -862,20 +862,38 @@ async def start_edit_order(order_id: int, state: FSMContext, message: types.Mess
     # diagnosis = data_order.get("diagnosis")
     # #a_tip = data_order.get("a_tip")
 
-    # PROBLEN
+    # PROBLEM
     problem = data_order.get("problem")
-    problem = json.loads(problem) if problem else ""
-    problem = " • ".join(problem.copy())
+    if problem:
+        try:
+            problem_list = json.loads(problem)
+            problem = " • ".join(problem_list) if isinstance(problem_list, list) else str(problem_list)
+        except json.JSONDecodeError:
+            problem = problem
+    else:
+        problem = ""
 
     # EQUIPMENT
     equipment = data_order.get("equipment")
-    equipment = json.loads(equipment) if equipment else ""
-    equipment = " • ".join(equipment.copy())
+    if equipment:
+        try:
+            equipment_list = json.loads(equipment)
+            equipment = " • ".join(equipment_list) if isinstance(equipment_list, list) else str(equipment_list)
+        except json.JSONDecodeError:
+            equipment = equipment
+    else:
+        equipment = ""
 
     # APPEARANCE
     appearance = data_order.get("appearance")
-    appearance = json.loads(appearance) if appearance else ""
-    appearance = " • ".join(appearance.copy())
+    if appearance:
+        try:
+            appearance_list = json.loads(appearance)
+            appearance = " • ".join(appearance_list) if isinstance(appearance_list, list) else str(appearance_list)
+        except json.JSONDecodeError:
+            appearance = appearance
+    else:
+        appearance = ""
 
     # GET DATA CLIENT:
     client_uuid = data_order.get("client_id")

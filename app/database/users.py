@@ -56,9 +56,16 @@ async def get_users_by_ids(user_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict]:
 
 async def get_all_users() -> list:
     """Получить всех пользователей users"""
-    query = f"SELECT * FROM users"
+    query = "SELECT * FROM users"
     records = await db.fetch(query)
     return [dict(rec) for rec in records]
+
+
+
+async def get_users_count() -> int:
+    """Получить общее количество пользователей"""
+    query = "SELECT COUNT(*) FROM users"
+    return await db.fetchval(query)
 
 
 

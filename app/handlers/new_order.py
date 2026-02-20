@@ -2,8 +2,8 @@
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
-from database.users import add_user, get_user_by_tg
-from utils.formatters import parse_cost, add_days_from_text, format_telegram_username
+from database.users import add_user, get_user_by_tg, get_user_by_phone, get_user_by_telegram_name
+from utils.formatters import parse_cost, add_days_from_text, format_telegram_username, format_phone
 from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
@@ -665,9 +665,16 @@ async def username_telegram(message: types.Message, state: FSMContext):
     await typing(message)
     lang = message.from_user.language_code
     username_telegram = format_telegram_username(message.text)
+
     if message.text in (MISS["ru"], MISS["en"]):
         username_telegram = None
+
     # Проверка в базе и предупреждение + варианты действий + валидация телеграм @name + валидация ввода 
+    if await get_user_by_telegram_name(username_telegram):
+        if lang == "ru": await message.answer("🚫 Клиент с таким телеграмм именем уже есть в базе, попробуйте просто его найти.", reply_markup = build_keyboard([CANCEL["en"]]))
+        else: await message.answer("🚫 A client with this telegram name is already in the database, just try to find it.", reply_markup = build_keyboard([CANCEL["en"]]))
+        return
+
     user_id = uuid.uuid4()
     time_reg = datetime.now()
 
@@ -697,8 +704,16 @@ async def phone_client(message: types.Message, state: FSMContext):
     phone = message.text
     if message.text in (MISS["ru"], MISS["en"]):
         phone = None
+
     # Проверка в базе и предупреждение + варианты действий + валидация номера + валидация ввода + фильтр
-    await state.update_data(phone=phone)
+    phone_client = format_phone(phone)
+    if await get_user_by_phone(phone_client):
+        if lang == "ru": await message.answer("🚫 Клиент с таким номером телефона уже есть в базе, попробуйте просто его найти.", reply_markup = build_keyboard([CANCEL["en"]]))
+        else: await message.answer("🚫 The client with this phone number is already in the database, just try to find it.", reply_markup = build_keyboard([CANCEL["en"]]))
+        return
+
+
+    await state.update_data(phone=phone_client)
     if lang == "ru": await message.answer("✉️ Введите телеграмм  клиента (@name):", reply_markup = build_keyboard([MISS["ru"]]))
     else: await message.answer("✉️ Enter the client's telegram (@name):", reply_markup = build_keyboard([MISS["en"]]))
     await state.set_state(newOrder.username_telegram)

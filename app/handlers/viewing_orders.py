@@ -72,8 +72,21 @@ async def push_orders_bot(
         device_model = one.get("device_model") or ""
         real_name_client = one.get("real_name_client")
         # real_name_created = one.get("real_name_created")
-        problem = json.loads(one.get("problem")) if one.get("problem") else ""
-        problem = ", ".join(problem.copy())
+        # problem = json.loads(one.get("problem")) if one.get("problem") else ""
+        # problem = ", ".join(problem.copy())
+        problem_data = one.get("problem")
+        if problem_data:
+            try:
+                problem_list = json.loads(problem_data)
+                if isinstance(problem_list, list):
+                    problem = ", ".join(problem_list)
+                else:
+                    problem = str(problem_list)
+            except json.JSONDecodeError:
+                problem = problem_data
+        else:
+            problem = ""
+
         status = one.get("status")
 
         if status in ("issued", "paid_not_issued"):

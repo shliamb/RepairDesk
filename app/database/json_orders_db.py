@@ -152,7 +152,6 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
                 order_number = await orders.create_order(order_data)
                 if order_number:
                     print(order_number)
-                    good_case += 1
 
                     if status != "issued":
                         continue
@@ -174,8 +173,10 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
                     # Сохранение данных клиента
                     if not await edit_client(client_update_data):
                         print("Error ошибка обновления данных клиента")
+                        bad_case += 1
                     
                     #print("client_update_data:", client_update_data)
+                    good_case += 1
 
 
                 else:

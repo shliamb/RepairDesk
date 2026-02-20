@@ -431,6 +431,13 @@ async def start_edit_client(
             if net_profit: customer_card += f" • {net_profit}{CURRENCY}"
             customer_card += f" • {format_date_nice(created_date, lang)}\n"
 
-    await message.answer(customer_card, reply_markup = build_keyboard(buttons), parse_mode="HTML")
+
+    if len(customer_card) <= 4096:
+        await message.answer(customer_card, reply_markup = build_keyboard(buttons), parse_mode="HTML")
+    else:
+        parts = [customer_card[i:i+4096] for i in range(0, len(customer_card), 4096)]
+        for part in parts:
+            await message.answer(part, reply_markup = build_keyboard(buttons), parse_mode="HTML")
+
     await state.update_data(client_id=client_id)
     await state.set_state(EditClient.client)

@@ -4,10 +4,15 @@ logger = set_logger(name="jsonFinStat")
 import os
 import json
 from datetime import datetime
+# from database.orders import OrderService
+# from database import db
 from utils.serialize import json_serializer, json_decoder
 from database.finstat import get_fin_stats_db, add_stat
 from database.users import get_user_by_user_id
 from config import PATH_JSON
+
+
+# orders = OrderService(db)
 
 
 async def get_json_fin_stats_db() -> str | bool:
@@ -39,6 +44,7 @@ async def get_json_fin_stats_db() -> str | bool:
 async def push_json_fin_stats_in_db(file_path: str) -> tuple[int, int]:
     """Импорт финансовых записей из JSON-файла в БД"""
     good_case, bad_case = 0, 0
+    #next_id_order = await orders.get_next_order_id()
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -70,7 +76,7 @@ async def push_json_fin_stats_in_db(file_path: str) -> tuple[int, int]:
             repair_type = rec.get("repair_type")
 
             # Проверка обязательных полей
-            if not all([order_id, client_id, master_id, who_issued]):
+            if not all([client_id, order_id, master_id, who_issued]):
                 print("Error Checking required fields: \n", "order_id:", order_id, "client_id:", client_id, "master_id:", master_id, "who_issued:", 
                       who_issued, "payment_amount:", payment_amount, "net_profit:", net_profit, "payment_method:", payment_method)
                 bad_case += 1
@@ -103,9 +109,8 @@ async def push_json_fin_stats_in_db(file_path: str) -> tuple[int, int]:
                 bad_case += 1
                 continue
 
-            # Вставляем запись (без payment_id – пусть serial сам проставится)
             stat_data = {
-                "order_id": order_id, # Со старой базы, не совпадет, такова жизнь..
+                "order_id": order_id,
                 "client_id": client_id,
                 "master_id": master_id,
                 "who_issued": who_issued,
@@ -122,6 +127,10 @@ async def push_json_fin_stats_in_db(file_path: str) -> tuple[int, int]:
             if not await add_stat(stat_data):
                 logger.error("Error add_stat")
                 print("Error add_stat")
+                bad_case += 1
+                continue
+
+            # next_id_order += 1
             good_case += 1
 
         except Exception as e:

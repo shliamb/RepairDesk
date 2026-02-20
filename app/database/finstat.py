@@ -77,7 +77,7 @@ async def get_payments(period: str = "years") -> list[dict]:
         """
     # period == "years" → без дополнительных условий
     
-    query += " ORDER BY payment_date DESC"
+    query += " ORDER BY payment_date ASC" # DESC ASC
     
     records = await db.fetch(query)
     return [dict(rec) for rec in records]

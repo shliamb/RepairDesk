@@ -3,7 +3,7 @@ from logs.set_logger import set_logger
 logger = set_logger(name="jsonCli")
 from config import PATH_JSON
 from datetime import datetime
-from database.users import get_all_users, add_user, get_user_by_phone, get_user_by_telegram_name
+from database.users import get_all_users, add_user, get_user_by_phone, get_user_by_telegram_name, get_user_by_user_id
 from utils.serialize import json_serializer, json_decoder
 from utils.formatters import format_phone
 from database import db
@@ -112,6 +112,13 @@ async def push_json_clients_in_db(file_path: str) -> tuple:
                 phone = user.get("phone")
                 username_telegram = user.get("username_telegram")
 
+                if user_id:
+                    get_user_id = await get_user_by_user_id(user_id)
+                    if get_user_id:
+                        print(f"Error клиент уже существует с user_id: {user_id}")
+                        bad_case += 1
+                        continue
+
                 if phone:
                     get_phone = await get_user_by_phone(format_phone(phone))
                     if get_phone:
@@ -137,7 +144,10 @@ async def push_json_clients_in_db(file_path: str) -> tuple:
                         continue
 
 
-                if await add_user(user_data): good_case += 1
+                if await add_user(user_data):
+                    good_case += 1
+                else:
+                    bad_case += 1
 
             except Exception as e:
                 print(f"Error add_user: {e}")

@@ -386,9 +386,9 @@ async def json_to_db(message: types.Message, state: FSMContext):
         filepath = os.path.join(os.getcwd(), filename)
         await message.bot.download(message.document, filepath)
 
-        users_filepath, orders_filepath = await parse_xls_get_json(filepath)
+        users_filepath, orders_filepath, finstat_filepath = await parse_xls_get_json(filepath)
 
-        for file_path in [users_filepath, orders_filepath]:
+        for file_path in [users_filepath, orders_filepath, finstat_filepath]:
             await message.reply_document(
                 document=types.input_file.FSInputFile(file_path),
                 caption="Get JSON file livesklad"

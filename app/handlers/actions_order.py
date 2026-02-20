@@ -160,7 +160,7 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
         "order_created_date": data_order.get("created_date"),
         "order_completed_date": completion_date or datetime.now(),
         "who_issued": who_issued,
-        "device_type": data_order.get("order_type"),
+        "device_type": data_order.get("device_type"),
         "device_model": data_order.get("device_model"),
         "repair_type": data_order.get("order_type")
     }
