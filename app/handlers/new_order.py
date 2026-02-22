@@ -4,6 +4,7 @@ logger = set_logger(name="handlers")
 from handlers.common import typing, is_manager
 from database.users import add_user, get_user_by_tg, get_user_by_phone, get_user_by_telegram_name
 from utils.formatters import parse_cost, add_days_from_text, format_telegram_username, format_phone
+from pdf.get_pdf import gen_receipt
 from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
@@ -105,25 +106,13 @@ async def save_order(lang: str, state: FSMContext, message: types.Message):
     if lang == "ru": await message.answer(f"🎉 Новый заказ {order_number} сохранён в базу.", reply_markup=ReplyKeyboardRemove())
     else: await message.answer(f"🎉 The new order {order_number} has been saved to the database.", reply_markup=ReplyKeyboardRemove())
 
-    data["order_number"] = order_number
-    # После сохранения, так как будет мешать
-    data["phone"] = state_data.get("phone")
-    data["lang"] = lang
+    # GET DATA ORDER -> ID
+    new_order_data = await order.get_order_order_number(order_number)
+    order_id = new_order_data.get("id")
 
     # Build PDF file
-    path_pdf = pdf.get_order_pdf(data)
-    if not order_number:
-        # logging...
-        if lang == "ru": await message.answer("🚫 При генерации PDF возникла проблема, извините. Попробуйте получить PDF документ снова, войдя в заказ.", reply_markup=ReplyKeyboardRemove())
-        else: await message.answer("🚫 There was a problem when generating the PDF, sorry. Try to get the PDF document again by logging in to the order.", reply_markup=ReplyKeyboardRemove())
-        return
+    await gen_receipt("in", order_id, lang, message, data={})
 
-    # SEND PDF FILE
-    send_text = "📄 Квитанция о приеме" if lang == "ru" else "📄 Admission receipt"
-    await message.reply_document(
-        document=types.input_file.FSInputFile(path_pdf),
-        caption=send_text
-    )
 
 
 

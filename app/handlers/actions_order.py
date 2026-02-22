@@ -2,25 +2,20 @@
 from handlers.common import typing, is_manager
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from utils.formatters import remove_emojis, extract_emoji, format_phone, format_date_nice, format_telegram_username, safe_int, safe_decimal, safe_float
+from utils.formatters import safe_int, safe_decimal, safe_float
 from database.users import get_user_by_user_id, get_user_by_tg, edit_client
 from database.finstat import add_stat
-from utils.serialize import json_serializer, custom_json_decoder
+from pdf.get_pdf import gen_receipt
 from utils.parse import is_number
-from handlers.edit_client import start_edit_client
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
+from datetime import datetime
 from config import UI_TEXTS, CURRENCY, ADMIN_ID
 from keyboards.workshop import build_keyboard
 from database import db
-from handlers.viewing_orders import Order # State из viewing_orders.py для перехода
-import json
-from datetime import datetime
-from decimal import Decimal
-
 
 
 router = Router()
@@ -30,6 +25,7 @@ order = OrderService(db)
 
 class Action(StatesGroup):
     pay_method = State()
+    receipt = State()
 
 
 
@@ -42,6 +38,7 @@ async def cancel(message: types.Message, state: FSMContext):
     await state.clear()
     if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
     else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
+
 
 
 
@@ -186,21 +183,10 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
     }
     if not completion_date: updata_order["completion_date"] = datetime.now()
 
-    # print("metod_pay:", metod_pay, "amount:", amount, "take:", take, "a_tip:", a_tip, "status_order:", status_order)
-    # print("updata_client:", updata_client)
-    # print("fin_data:", fin_data)
-    # print("updata_order:", updata_order)
-
     # СДАЧА КЛИЕНТУ:
     total = None
     cost_repair = data_order.get("cost_repair") or 0
     cost_of_parts = data_order.get("cost_of_parts") or  0
-
-    # if not cost_repair and not cost_of_parts:
-    #     if lang == "ru": await message.answer(f"🚫 В заказе отсутствуют оплачиваемые услуги", reply_markup=ReplyKeyboardRemove())
-    #     else: await message.answer(f"🚫 There are no paid services in the order", reply_markup=ReplyKeyboardRemove())
-    #     await state.clear()
-    #     return 
 
     if status_order != "issued_not_paid":
         total = float(amount) - (float(cost_repair) + float(cost_of_parts) - float(data_order.get("cost_prepayment") or 0))
@@ -246,8 +232,27 @@ async def choosing_payment_method(message: types.Message, state: FSMContext):
 
 
 
+# GET PDF RECEIPT:
+@router.message(Action.receipt)
+async def get_choice_recept(message: types.Message, state: FSMContext):
+    """ Генерация в зависимости от выбора  """
+    await typing(message)
+    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    input_text = message.text
+    state_data = await state.get_data()
+    order_id = state_data.get("id")
+    data = {}
 
 
+    if input_text == UI_TEXTS[lang]["receipt_in"]:
+        await gen_receipt("in", order_id, lang, message, data)
+
+    if input_text == UI_TEXTS[lang]["receipt_out"]:
+        data_user = await get_user_by_tg(user_id)
+        who_issued = data_user.get("real_name") or data_user.get("name")
+        data["who_issued"] = who_issued
+        await gen_receipt("out", order_id, lang, message, data)
 
 
 
@@ -268,7 +273,11 @@ async def actions_order_tap(order_id: int, action: str, message: types.Message, 
         return
 
     elif action == "pdf":
-        await message.answer("🚫 pdf")
+        if lang == "ru": text = "📄 Вариант документа:"
+        else: text = "📄 Document option:"
+        buttons = [UI_TEXTS[lang]["receipt_in"], UI_TEXTS[lang]["receipt_out"], UI_TEXTS[lang]["cancel"]] # UI_TEXTS[lang]["back"]
+        await message.answer(text, reply_markup = build_keyboard(buttons))
+        await state.set_state(Action.receipt)
         return
     
     elif action == "delet":
@@ -283,8 +292,8 @@ async def actions_order_tap(order_id: int, action: str, message: types.Message, 
             else: await message.answer("🚫 Error in deleting an order")
             return
         else:
-            if lang == "ru": await message.answer("👍 Заказ и его финансовые операции удалены")
-            else: await message.answer("👍 The order and its financial transactions have been deleted")
+            if lang == "ru": await message.answer("👍 Заказ и его финансовые операции удалены", reply_markup=ReplyKeyboardRemove())
+            else: await message.answer("👍 The order and its financial transactions have been deleted", reply_markup=ReplyKeyboardRemove())
             return
 
     elif action == "payd":

@@ -185,7 +185,6 @@ def safe_float(value, default=0.0) -> float:
 
 
 
-
 # # Настройки телефонов
 # PHONE_COUNTRY_CODE = '7'           # Код страны
 # PHONE_TOTAL_LENGTH = 11            # Всего цифр (с кодом)
