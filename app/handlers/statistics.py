@@ -1,22 +1,22 @@
 #! handlers/statistics.py python3
 from logs.set_logger import set_logger
 logger = set_logger(name="handlers")
-from handlers.common import typing, is_manager, is_super_admin
-from database.users import add_user, get_user_by_tg, get_users_by_ids
+from handlers.common import typing, is_super_admin
+from database.users import get_users_by_ids
 from database.finstat import get_payments
-from utils.formatters import parse_cost, add_days_from_text, format_telegram_username
-from datetime import datetime
+# from utils.formatters import parse_cost, add_days_from_text, format_telegram_username
+# from datetime import datetime
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove
-from config import get_brands, UI_TEXTS, CANCEL
+from config import UI_TEXTS, CANCEL
 from keyboards.workshop import build_keyboard
 from database import db
 from database.orders import OrderService
-from pdf.gen_pdf import BuildPDF
-import uuid
-import json
+# from pdf.gen_pdf import BuildPDF
+# import uuid
+# import json
 
 router = Router()
 order = OrderService(db)
