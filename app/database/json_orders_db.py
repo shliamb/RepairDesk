@@ -153,29 +153,29 @@ async def push_json_orders_in_db(file_path: str) -> tuple:
                 if order_number:
                     print(order_number)
 
-                    if status != "issued":
-                        continue
+                    # if status != "issued":
+                    #     continue
 
-                    # Сбор обновленных данных клиента
-                    old_data_user = await get_user_by_user_id(client_id)
-                    total_spent: Decimal = json_decoder(old_data_user.get("total_spent")) or 0
-                    repair_count_total: int  = json_decoder(old_data_user.get("repair_count_total")) or 0
-                    a_tip: Decimal = json_decoder(old_data_user.get("a_tip")) or 0
+                    # # Сбор обновленных данных клиента
+                    # old_data_user = await get_user_by_user_id(client_id)
+                    # total_spent: Decimal = json_decoder(old_data_user.get("total_spent")) or 0
+                    # repair_count_total: int  = json_decoder(old_data_user.get("repair_count_total")) or 0
+                    # a_tip: Decimal = json_decoder(old_data_user.get("a_tip")) or 0
                     
 
-                    client_update_data = {
-                        "user_id": client_id,
-                        "total_spent": total_spent + net_profit,
-                        "repair_count_total": repair_count_total + 1,
-                        "a_tip": a_tip + tips
-                    }
+                    # client_update_data = {
+                    #     "user_id": client_id,
+                    #     "total_spent": total_spent + net_profit,
+                    #     "repair_count_total": repair_count_total + 1,
+                    #     "a_tip": a_tip + tips
+                    # }
 
-                    # Сохранение данных клиента
-                    if not await edit_client(client_update_data):
-                        print("Error ошибка обновления данных клиента")
-                        bad_case += 1
+                    # # Сохранение данных клиента
+                    # if not await edit_client(client_update_data):
+                    #     print("Error ошибка обновления данных клиента")
+                    #     bad_case += 1
                     
-                    #print("client_update_data:", client_update_data)
+                    # #print("client_update_data:", client_update_data)
                     good_case += 1
 
 

@@ -45,7 +45,7 @@ sudo apt install docker.io docker-compose -y
 
 Клонируй репозиторий:
 ```bash
-git clone https://github.com/твой-логин/RepairDesk.git
+git clone https://github.com/shliamb/RepairDesk.git
 cd RepairDesk
 ```
 
@@ -255,7 +255,7 @@ sudo apt install docker.io docker-compose -y
 ```
 
 ```bash
-git clone https://github.com/your-username/RepairDesk.git
+git clone https://github.com/shliamb/RepairDesk.git
 cd RepairDesk
 ```
 

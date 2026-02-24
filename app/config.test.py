@@ -6,7 +6,7 @@ load_dotenv()
 
 
 #### BASIC CONFIG (set it up manually): ####
-DOCKER = False 
+DOCKER = False
 LOG_TO_FILE = False
 HOST = "app_postgres" if DOCKER else  "localhost" # app_postgres localhost
 TIME_CORRECTION = + 3
@@ -21,12 +21,16 @@ DOWNLOAD = "/downloads/" if DOCKER else "downloads"
 PATH_JSON = "/json/" if DOCKER else "json"
 # OUTPUT = "/output/" if DOCKER else "../output/"
 # SYST_CONT_FOLDER = "/" if DOCKER else "../"
+TIME_ZONE = 'Europe/Moscow'
 
 
 ################ NEW ORDER CONST #####################
 
 # STATUS_ORDER = ["new", "diagnosis", "repair", "waiting_parts", "testing" 
 #                 "ready", "completed", "canceled", "rejected", "postponed"]
+#
+
+#
 
 ORDER_STATUS_RU = {
     'new': 'Новый',
@@ -62,7 +66,7 @@ ORDER_STATUS = {
 NEW = ["new"]
 # ACTIVE_STATUSES = ["new", "diagnosis", "repair", "waiting_parts", "waiting_decision", "testing", "ready", "issued_not_paid"]
 IN_PROGRESS_STATUSES = ["testing", "repair", "diagnostics", "waiting_parts", "waiting_decision"]
-READY_STATUSES = ["ready", "paid_not_issued"]
+READY_STATUSES = ["ready", "issued_not_paid", "testing"]
 COMPLETED_STATUSES = ["issued"]
 
 
@@ -104,9 +108,11 @@ UI_TEXTS = {
     "ru": {
         "yes": "👍 Да", 
         "no": "👎 Нет", 
-        "miss": "⏩ Пропустить", 
+        "miss": "⏩ Пропустить",
+        "back": "↩️ Назад",
         "cancel": "🚫 Отмена", 
         "done": "✅ Готово",
+        "delet": "🗑️ Удалить",
         "new_cli": "👨🏻‍💼 Создать клиента",
         "role": "👥 Роль",
         "contact": "📋 Контактные данные",
@@ -132,14 +138,28 @@ UI_TEXTS = {
         "card": "💳 Перевод",
         "cash": "💵 Наличность",
         "crypto": "₿ Крипта",
-        "no_payment": "🆓 Без оплаты"
+        "no_payment": "🆓 Без оплаты",
+        "today": "📅 Сегодня",
+        "month": "🗓️ Этот месяц",
+        "year": "🗓️ Этот год",
+        "years": "📚  Года",
+        "stats_revenue": "💰 Доход / Прибыль",
+        "stats_orders_count": "📦 Кол. ремонтов",
+        "stats_payment_methods": "💳 Способы оплаты",
+        "stats_by_master": "👨‍🔧 По мастерам",
+        "stats_by_device": "📱 По устройствам",
+        "action": "⚡ Действия",
+        "receipt_in": "📥 Приём",
+        "receipt_out": "📤 Выдача"
     },
     "en": {
         "yes": "👍 Yes", 
         "no": "👎 No", 
-        "miss": "⏩ Miss", 
+        "miss": "⏩ Miss",
+        "back": "↩️ Back",
         "cancel": "🚫 Cancellation", 
         "done": "✅ Done",
+        "delet": "🗑️ Delete",
         "new_cli": "👨🏻‍💼 Create a client",
         "role": "👥 User role",
         "contact": "📋 Contact info",
@@ -165,8 +185,19 @@ UI_TEXTS = {
         "card": "💳 Card / Transfer",
         "cash": "💵 Cash",
         "crypto": "₿ Crypto",
-        "no_payment": "🆓 No payment"
-
+        "no_payment": "🆓 No payment",
+        "today": "📅 Today",
+        "month": "🗓️ A month",
+        "year": "🗓️ A year",
+        "years": "📚 Years",
+        "stats_revenue": "💰 Revenue / Profit",
+        "stats_orders_count": "📦 Total repairs",
+        "stats_payment_methods": "💳 Payment methods",
+        "stats_by_master": "👨‍🔧 By master",
+        "stats_by_device": "📱 By device",
+        "action": "⚡ Actions",
+        "receipt_in": "📥 Acceptance",
+        "receipt_out": "📤 Release"
     },
 }
 
@@ -304,6 +335,18 @@ CONDITIONS = {"ru": """1. Устройство принимается в мас�
 5. The device is issued upon presentation of an "Admission receipt". In case of loss of the receipt, the device can be issued upon presentation of an identity document addressed to the customer.
 The Customer has read and agrees to the above conditions and the processing of personal data specified in this receipt, and is responsible for their accuracy. The customer confirms that he is the legal owner of the device."""}
 
+
+
+CONDITIONS_OF_ISSUE = {"ru": """Гарантия не предоставляется на программное обеспечение, технологическую чистку после влаги и работы над устройством с сильной деформацией электронных элементов. Гарантия начинается с момента подписания Акта выполненых работ в двухстороннем порядке. Подписанием настоящего Акта выполненых работ, клиент подтверждает, что услуги по диагностике и ремонту указанного устройства выполнены в полном объеме, претензий и замечаний не имеется. Перед подписанием акта выполненных работ, Клиент убедился,что устройство работает нормально: произвёл полный и всесторонний осмотр устройства, протестировал его программные и физические функции. Внутри любого устройства, подвергавшегося разбору, Исполнитель оставляет фирменные пломбы. Их отсутствие или испорченный внешний вид, полученный от физического воздействия, означает, что устройство разбирал специалист, не имеющий отношения к Исполнителю. В подобных случаях Исполнитель не несёт никаких гарантийных обязательств.
+При замене матрицы, Клиент в период гарантийного срока обязуется сохранить товарный внешний вид детали, в который входит отсутствие царапин, потёртостей и сколов на стеклянной поверхности, иначе, на случай брака, в гарантии будет отказано.
+Вышеперечисленные услуги выполнены полностью и в срок. Заказчик претензий по объему, качеству и срокам оказания услуг не имеет.""", 
+"en": """The warranty is not provided for software, technological cleaning after moisture and work on a device with severe deformation of electronic elements. The guarantee begins from the moment of signing the Act of completed work on a bilateral basis. By signing this Act of Completed work, the client confirms that the services for diagnostics and repair of the specified device have been completed in full, there are no complaints or comments. Before signing the certificate of completed work, the Client made sure that the device was working.
+normal: performed a full and comprehensive inspection of the device, tested its software and physical functions. 
+The Contractor leaves branded seals inside any device that has been disassembled. Their absence or the ruined appearance obtained from physical impact means that the device was disassembled by a specialist unrelated to the Performer. In such cases, the Contractor does not bear any
+warranty obligations.
+When replacing the matrix, the Customer undertakes to preserve the product appearance of the part during the warranty period, which includes the absence of scratches., scuffs and chips on the glass surface, otherwise, in case of marriage, the warranty will be denied.
+The above services were completed in full and on time. The customer has no complaints about the volume, quality and timing of the provision of services."""}
+
 ADRES = "Москва, Тверская 41, +7 (999) 999-99-99"
 
 SITE = "www.site.ru"
@@ -321,6 +364,7 @@ PASSWORD_DB = os.environ.get('PASSWORD_DB')
 DB_NAME = os.environ.get('POSTGRES_DB')
 ADMIN_ID = int(os.environ.get('admin_id'))
 KEY_API_DEEPSEEK = os.environ.get('key_api_deepseek')
+PROXY = os.environ.get('proxy')
 
 
 
@@ -437,4 +481,3 @@ WORKS_EN = {
 #         env_file = ".env"
 
 # settings = Settings()
-
