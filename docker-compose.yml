@@ -16,22 +16,22 @@ services:
     networks:
       - db-network
 
-#  bot:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.bot
-#     container_name: telegram_bot
-#     environment:
-#       POSTGRES_HOST: postgres
-#       POSTGRES_USER: ${USER_DB}
-#       POSTGRES_PASSWORD: ${PASSWORD_DB}
-#       POSTGRES_DB: ${POSTGRES_DB}
-#     depends_on:
-#       - postgres
-#     networks:
-#       - db-network
-#     ports:
-#       - "8080:80"  # Публикация порта 80 контейнера на порт 8080 хоста
+  bot:
+      build:
+        context: .
+        dockerfile: Dockerfile.bot
+      container_name: telegram_bot
+      environment:
+        POSTGRES_HOST: postgres
+        POSTGRES_USER: ${USER_DB}
+        POSTGRES_PASSWORD: ${PASSWORD_DB}
+        POSTGRES_DB: ${POSTGRES_DB}
+      depends_on:
+        - postgres
+      networks:
+        - db-network
+      ports:
+        - "8080:80"  # Публикация порта 80 контейнера на порт 8080 хоста
 
 volumes:
   postgres_data:
