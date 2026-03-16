@@ -38,7 +38,7 @@ def create_tables_in_db():
             description_user VARCHAR,                                                           -- Описание пользователя, для внутреннего использования
             source VARCHAR(200),                                                                -- Источник рекламы
             block BOOLEAN DEFAULT FALSE,                                                        -- Блок для пид..ов
-            hum_quality VARCHAR(50),                                                            -- Бывает полезно, когда повторные обращения - экономит время и нервы   
+            hum_quality VARCHAR(100),                                                            -- Бывает полезно, когда повторные обращения - экономит время и нервы   
             
             last_visit TIMESTAMP,                                                               -- Последнее посещение
             time_reg TIMESTAMP,                                                                 -- Время регистрации
@@ -67,13 +67,13 @@ def create_tables_in_db():
             sn_imei VARCHAR(50),
             status VARCHAR(50),                                                                 -- Статус заказа (новый, в работе, готов..)
             order_type VARCHAR(50),                                                             -- Тип заказа (Платный, гарантийный)
-            device_type VARCHAR(50),                                                            -- Тип устройства (принтер, телефон)
-            device_brand VARCHAR(50),                                                           -- Бренд устройства (Asus, Apple)
-            device_model VARCHAR(100),                                                          -- Модель устройства (iPhone 16)
-            equipment VARCHAR(100),                                                             -- Комплектация устройства (Зарядка)
+            device_type VARCHAR(500),                                                            -- Тип устройства (принтер, телефон)
+            device_brand VARCHAR(500),                                                           -- Бренд устройства (Asus, Apple)
+            device_model VARCHAR(500),                                                          -- Модель устройства (iPhone 16)
+            equipment VARCHAR(1000),                                                             -- Комплектация устройства (Зарядка)
             
             problem TEXT,                                                                       -- Описание проблемы
-            appearance VARCHAR(100),                                                            -- Внешний вид устройства
+            appearance VARCHAR(1000),                                                            -- Внешний вид устройства
             created_date TIMESTAMP,                                                             -- Дата приема устройства
             completion_date TIMESTAMP,                                                          -- Дата выполнения заказа
             diagnosis_before TIMESTAMP,                                                         -- Дата ожидания примерной готовности диагностики
@@ -101,7 +101,7 @@ def create_tables_in_db():
             real_name_client VARCHAR(50),                                                       -- Реальное имя клиента для документов (для уменьшения обращений к базе)
             
             created_by BIGINT NOT NULL,                                                         -- Оформил менеджер с телеграмм id
-            real_name_created VARCHAR(50),                                                      -- Реальное имя принимающего для документов (для уменьшения обращений к базе) 
+            real_name_created VARCHAR(100),                                                      -- Реальное имя принимающего для документов (для уменьшения обращений к базе) 
             
             master UUID,                                                                        -- user_id мастера в UUID                                                
             
