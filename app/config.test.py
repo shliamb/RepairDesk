@@ -5,12 +5,19 @@ load_dotenv()
 
 
 
-#### BASIC CONFIG (set it up manually): ####
-DOCKER = False
-LOG_TO_FILE = False
-HOST = "app_postgres" if DOCKER else  "localhost" # app_postgres localhost
+#### BASIC CONFIG (set it up manually): #######
+
+USE_PROXY = True
+USE_MTPROTO = True
+DOCKER = True
+LOG_TO_FILE = True
+HOST = "app_postgres_v14" if DOCKER else  "localhost" # app_postgres localhost
+# HOST = "127.0.0.1" if DOCKER else  "localhost" # app_postgres localhost
+# А вот тут переворачиваем порты: внутри Докера — 5432, снаружи — 25432
+PORT = 5432 if DOCKER else 25432
 TIME_CORRECTION = + 3
 MAX_SIZE_DOC = 2 # 2 мегабайт
+ERR_PROXY_LIMIT = 3
 ########
 
 
@@ -31,6 +38,9 @@ TIME_ZONE = 'Europe/Moscow'
 #
 
 #
+
+
+## ghfdjfd
 
 ORDER_STATUS_RU = {
     'new': 'Новый',
@@ -150,7 +160,8 @@ UI_TEXTS = {
         "stats_by_device": "📱 По устройствам",
         "action": "⚡ Действия",
         "receipt_in": "📥 Приём",
-        "receipt_out": "📤 Выдача"
+        "receipt_out": "📤 Выдача",
+        "feedback": "💌 Запросить отзыв"
     },
     "en": {
         "yes": "👍 Yes", 
@@ -197,7 +208,8 @@ UI_TEXTS = {
         "stats_by_device": "📱 By device",
         "action": "⚡ Actions",
         "receipt_in": "📥 Acceptance",
-        "receipt_out": "📤 Release"
+        "receipt_out": "📤 Release",
+        "feedback": "💌 Request Review"
     },
 }
 
@@ -347,26 +359,14 @@ warranty obligations.
 When replacing the matrix, the Customer undertakes to preserve the product appearance of the part during the warranty period, which includes the absence of scratches., scuffs and chips on the glass surface, otherwise, in case of marriage, the warranty will be denied.
 The above services were completed in full and on time. The customer has no complaints about the volume, quality and timing of the provision of services."""}
 
-ADRES = "Москва, Тверская 41, +7 (999) 999-99-99"
 
-SITE = "www.site.ru"
+ADRES = "Город и адрес мастерской на квитанции"
+
+
+SITE = "сайт"
+
 
 CURRENCY = "₽"
-
-
-
-
-
-# KEYS .env:
-TELEGRAM_BOT_TOKEN = os.environ.get('telegram_bot_token')
-USER_DB = os.environ.get('USER_DB')
-PASSWORD_DB = os.environ.get('PASSWORD_DB')
-DB_NAME = os.environ.get('POSTGRES_DB')
-ADMIN_ID = int(os.environ.get('admin_id'))
-KEY_API_DEEPSEEK = os.environ.get('key_api_deepseek')
-PROXY = os.environ.get('proxy')
-
-
 
 
 
@@ -465,6 +465,30 @@ WORKS_EN = {
 
 
 
+GET_FEEDBACK = {
+    "ru": "Здравствуйте. Недавно я чинил вашу технику. Я буду крайне благодарен, если вы оставите отзыв - сайт",
+    "en": "Hello. I recently repaired your equipment. I will be extremely grateful if you leave a review - сайт"
+}
+
+
+# KEYS .env:
+TELEGRAM_BOT_TOKEN = os.environ.get('telegram_bot_token')
+USER_DB = os.environ.get('USER_DB')
+PASSWORD_DB = os.environ.get('PASSWORD_DB')
+DB_NAME = os.environ.get('POSTGRES_DB')
+ADMIN_ID = int(os.environ.get('admin_id'))
+API_ID = int(os.environ.get('api_id'))
+API_HASH = str(os.environ.get('api_hash'))
+# KEY_API_DEEPSEEK = os.environ.get('key_api_deepseek')
+# PROXY = os.environ.get('proxy')
+
+
+
+
+
+
+
+
 
 
 
@@ -481,3 +505,4 @@ WORKS_EN = {
 #         env_file = ".env"
 
 # settings = Settings()
+

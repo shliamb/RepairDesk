@@ -1,0 +1,4 @@
+MTP_PROXY_URLS=https://t.me/proxy?server=fas8t.co.uk.&port=443&secret=ddf0eeb0bd9a5655454ee3b2a216b;https://t.me/proxy?server=s3.postpulse.space&port=443&secret=eede09f54547907c3454542e617269745454686f70;
+
+
+# Использует первый попавшийся, на четвертую ошибку меняет на следующий прокси
