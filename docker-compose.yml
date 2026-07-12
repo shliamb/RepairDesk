@@ -42,7 +42,6 @@ services:
     restart: always
     env_file: .env  # Docker Compose сам прочитает файл и прокинет ВСЕ переменные внутрь
     environment:
-      admin_id: ${ADMIN_ID}
       POSTGRES_HOST: postgres  # Будет работать идеально, т.к. VPN-контейнер видит этот хост
       POSTGRES_USER: ${USER_DB}
       POSTGRES_PASSWORD: ${PASSWORD_DB}
