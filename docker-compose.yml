@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   vpn-tun:
-    image: ghcr.io/sagernet/sing-box:1.13.14
+    image: ghcr.io/sagernet/sing-box:latest   #1.13.14
     container_name: vpn-tun
     restart: always
     cap_add:
