@@ -8,7 +8,7 @@ load_dotenv()
 #### BASIC CONFIG (set it up manually): #######
 
 USE_PROXY = True
-USE_MTPROTO = True
+USE_MTPROTO = False # Позже если обойдусь то нахуй удалю..
 DOCKER = True
 LOG_TO_FILE = True
 HOST = "app_postgres_v14" if DOCKER else  "localhost" # app_postgres localhost
