@@ -40,7 +40,7 @@ class myTelethon:
         if proxy_tuple:
             host, port, secret = proxy_tuple
             self.client = TelegramClient(
-                'session_name',
+                'repair_desk_bot',
                 API_ID,
                 API_HASH,
                 proxy=(host, port, secret),
@@ -48,7 +48,7 @@ class myTelethon:
                 auto_reconnect=False   # отключаем встроенный reconnect
             )
         else:
-            self.client = TelegramClient('session_name', API_ID, API_HASH)
+            self.client = TelegramClient('repair_desk_bot', API_ID, API_HASH)
 
         # """ Telethon вылавливает все мои сообщения в телеграмм и кидает в очередь """
         # @self.client.on(events.NewMessage(chats=GROUP_ID))

@@ -5,7 +5,9 @@
   "inbounds": [
     {
       "type": "tun",
-      "inet4_address": "172.16.0.1/30",
+      "address": [
+        "172.16.0.1/30"
+      ],
       "mtu": 1400,
       "auto_route": true,
       "strict_route": true,
@@ -20,7 +22,7 @@
       "server_port": 443,
       "uuid": "7054712a-030f-4c99-bdc3-793e16c00d9a",
       "flow": "xtls-rprx-vision",
-      "packet_encoding": "xray",
+      "bind_interface": "eth0",
       "tls": {
         "enabled": true,
         "server_name": "www.myhelsinki.fi",
@@ -37,4 +39,5 @@
     }
   ]
 }
+
 

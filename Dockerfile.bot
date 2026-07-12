@@ -2,18 +2,18 @@ FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /
+WORKDIR /workspace
 
 COPY requirements.txt ./
-
 RUN pip install --no-cache-dir -r requirements.txt
 
-# # Установка PostgreSQL и утилиты pg_dump и еще разной мути..
+# Установка PostgreSQL утилит
 RUN apt-get update && apt-get install -y apt-utils \
     postgresql \
     postgresql-contrib \
-    postgresql-client
+    postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY ./app/ ./app/
 
 CMD ["python", "app/run_bot.py"]
