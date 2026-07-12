@@ -43,7 +43,7 @@ services:
       POSTGRES_USER: ${USER_DB}
       POSTGRES_PASSWORD: ${PASSWORD_DB}
       POSTGRES_DB: ${POSTGRES_DB}
-    network_mode: "container:vpn-tun"  # Забираем сеть у VPN
+    network_mode: "service:vpn-tun"  # Забираем сеть у VPN
     depends_on:
       - vpn-tun
       - postgres  # <-- Объединили depends_on и указали правильное имя сервиса базы
