@@ -54,12 +54,18 @@ services:
     volumes:
       - ./master/session_name.session:/masterapp/session_name.session
       - /etc/localtime:/etc/localtime:ro
+    # volumes:
+    #   # Монтируем файлы сессии из корня твоего проекта прямо в рабочую директорию бота (/workspace)
+    #   - ./repair_desk_bot.session:/workspace/repair_desk_bot.session
+    #   - ./repair_desk_bot.session-journal:/workspace/repair_desk_bot.session-journal
+    #   # Синхронизация времени
+    #   - /etc/localtime:/etc/localtime:ro
+
     volumes:
-      # Монтируем файлы сессии из корня твоего проекта прямо в рабочую директорию бота (/workspace)
-      - ./repair_desk_bot.session:/workspace/repair_desk_bot.session
-      - ./repair_desk_bot.session-journal:/workspace/repair_desk_bot.session-journal
-      # Синхронизация времени
-      - /etc/localtime:/etc/localtime:ro
+        - .:/workspace # Монтируем ВСЮ текущую папку проекта в /workspace контейнера
+        - /etc/localtime:/etc/localtime:ro
+        # Синхронизация времени
+        - /etc/localtime:/etc/localtime:ro
 
 
 volumes:
