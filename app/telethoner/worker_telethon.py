@@ -22,18 +22,28 @@ class myTelethon:
         self.error_limit = ERR_PROXY_LIMIT
 
 
+    # def _parse_proxy_str(self, proxy_str: str):
+    #     """
+    #     Преобразует строку вида socks5://user:pass@host:port 
+    #     в словарь, который Telethon и python-socks поймут идеально.
+    #     """
+    #     parsed = urlparse(proxy_str)
+    #     return {
+    #         'proxy_type': 'socks5',      # Явно пишем тип строкой
+    #         'addr': parsed.hostname,     # Хост
+    #         'port': parsed.port,         # Порт
+    #         'username': parsed.username, # Логин
+    #         'password': parsed.password  # Пароль
+    #     }
+
     def _parse_proxy_str(self, proxy_str: str):
-        """
-        Преобразует строку вида socks5://user:pass@host:port 
-        в словарь, который Telethon и python-socks поймут идеально.
-        """
         parsed = urlparse(proxy_str)
         return {
-            'proxy_type': 'socks5',      # Явно пишем тип строкой
-            'addr': parsed.hostname,     # Хост
-            'port': parsed.port,         # Порт
-            'username': parsed.username, # Логин
-            'password': parsed.password  # Пароль
+            'proxy_type': 'http',  # <-- МЕНЯЕМ 'socks5' НА 'http'
+            'addr': parsed.hostname,
+            'port': parsed.port,
+            'username': parsed.username,
+            'password': parsed.password
         }
 
 
