@@ -18,6 +18,7 @@ repair_desk_bot.session
 repair_desk_bot.session-journal
 .env.socks5proxy
 .env.mtproxy
+config.json
 
 
 
