@@ -51,21 +51,21 @@ services:
     depends_on:
       - vpn-tun
       - postgres  # <-- Объединили depends_on и указали правильное имя сервиса базы
-    volumes:
-      - ./master/session_name.session:/masterapp/session_name.session
-      - /etc/localtime:/etc/localtime:ro
+    # volumes:
+    #   - ./master/session_name.session:/masterapp/session_name.session
+    #   - /etc/localtime:/etc/localtime:ro
     # volumes:
     #   # Монтируем файлы сессии из корня твоего проекта прямо в рабочую директорию бота (/workspace)
     #   - ./repair_desk_bot.session:/workspace/repair_desk_bot.session
     #   - ./repair_desk_bot.session-journal:/workspace/repair_desk_bot.session-journal
     #   # Синхронизация времени
     #   - /etc/localtime:/etc/localtime:ro
-
     volumes:
-        - .:/workspace # Монтируем ВСЮ текущую папку проекта в /workspace контейнера
+        #- .:/workspace # Монтируем ВСЮ текущую папку проекта в /workspace контейнера
+        - ./repair_desk_bot.session:/workspace/repair_desk_bot.session
+        - ./repair_desk_bot.session-journal:/workspace/repair_desk_bot.session-journal
         - /etc/localtime:/etc/localtime:ro
-        # Синхронизация времени
-        - /etc/localtime:/etc/localtime:ro
+
 
 
 volumes:
