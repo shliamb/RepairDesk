@@ -1,0 +1,40 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "inet4_address": "172.16.0.1/30",
+      "mtu": 1400,
+      "auto_route": true,
+      "strict_route": true,
+      "stack": "system"
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-out",
+      "server": "26.22.32.35",
+      "server_port": 443,
+      "uuid": "7054897878978798799a",
+      "flow": "xtls-rprx-vision",
+      "packet_encoding": "xray",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.site.fi",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "j0Pha0.............3mg",
+          "short_id": "a3c.......bbb"
+        }
+      }
+    }
+  ]
+}
+
