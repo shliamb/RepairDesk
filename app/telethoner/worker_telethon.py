@@ -37,9 +37,13 @@ class myTelethon:
     #     }
 
     def _parse_proxy_str(self, proxy_str: str):
+        """
+        Преобразует строку прокси в словарь.
+        Меняем тип на 'http', так как прокся отлично понимает этот протокол!
+        """
         parsed = urlparse(proxy_str)
         return {
-            'proxy_type': 'http',  # <-- МЕНЯЕМ 'socks5' НА 'http'
+            'proxy_type': 'http',       # <-- ВОТ ТУТ МЕНЯЕМ 'socks5' НА 'http'
             'addr': parsed.hostname,
             'port': parsed.port,
             'username': parsed.username,
@@ -89,17 +93,17 @@ class myTelethon:
             # Скрываем пароль в логах для безопасности
             #print(f"🔄 Trying SOCKS5 Proxy {proxy_tuple[1]}:{proxy_tuple[2]}...")
             # Вместо proxy_tuple[1] теперь используем ключи словаря:
-            print(f"🔄 Trying SOCKS5 Proxy {proxy_tuple['addr']}:{proxy_tuple['port']}...")
+            print(f"🔄 Trying HTTP Proxy {proxy_tuple['addr']}:{proxy_tuple['port']}...")
             
             self._connect_proxy(proxy_tuple)
             try:
                 await self.client.connect()
                 # Успешно – сохраняем индекс
                 self.current_proxy_index = idx
-                print(f"✅ Connected via SOCKS5 Proxy {proxy_tuple[1]}:{proxy_tuple[2]}")
+                print(f"✅ Connected via HTTP Proxy {proxy_tuple['addr']}:{proxy_tuple['port']}")
                 return True
             except Exception as e:
-                print(f"❌ Failed connection via SOCKS5: {e}")
+                print(f"❌ Failed connection via HTTP: {e}")
                 if self.client:
                     await self.client.disconnect()
                 self.client = None
@@ -107,6 +111,9 @@ class myTelethon:
 
         print("❌ No working SOCKS5 Proxy found")
         return False
+
+
+
 
     async def run(self):
         """
