@@ -61,11 +61,10 @@ services:
     #   # Синхронизация времени
     #   - /etc/localtime:/etc/localtime:ro
     volumes:
-        #- .:/workspace # Монтируем ВСЮ текущую папку проекта в /workspace контейнера
-        - ./repair_desk_bot.session:/workspace/repair_desk_bot.session
-        - ./repair_desk_bot.session-journal:/workspace/repair_desk_bot.session-journal
+        - .:/workspace # Монтируем ВСЮ текущую папку проекта в /workspace контейнера
+        # - ./repair_desk_bot.session:/workspace/repair_desk_bot.session
+        # - ./repair_desk_bot.session-journal:/workspace/repair_desk_bot.session-journal
         - /etc/localtime:/etc/localtime:ro
-
 
 
 volumes:
