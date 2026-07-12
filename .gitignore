@@ -18,7 +18,7 @@ repair_desk_bot.session
 repair_desk_bot.session-journal
 .env.socks5proxy
 .env.mtproxy
-app/vpn/config.json
+app/vpn/vless_config.json
 
 
 
