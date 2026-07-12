@@ -1,4 +1,9 @@
-from config import TELEGRAM_BOT_TOKEN, ADMIN_ID, PROXY
+from config import TELEGRAM_BOT_TOKEN, USE_PROXY
+from proxy.socks5proxy import SOCKS5PROXY_STRINGS
+import asyncio
+import aiohttp
+from bot_instance import AioBot
+from python_socks._errors import ProxyError
 from logs.set_logger import set_logger
 logger = set_logger(name="bot")
 # import logging
@@ -6,63 +11,19 @@ logger = set_logger(name="bot")
 # logging.getLogger('aiogram').setLevel(logging.DEBUG)
 from handlers import ALL_ROUTERS
 from database import db
-import asyncio
-from aiogram import Bot, Dispatcher, Router, types, F
-from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram import Dispatcher, Router 
+from telethoner import mytelethon
 
 
-session = AiohttpSession(proxy=PROXY) if PROXY else None
 
-bot = Bot(
-    TELEGRAM_BOT_TOKEN,
-    session=session,
-    parse_mode="markdown"
-)
-
+# В AioBot производится ротирование прокси
+# При обрыве, прокси должен сам переподключиться к лушему по ping
+bot_instance = AioBot(USE_PROXY, SOCKS5PROXY_STRINGS, TELEGRAM_BOT_TOKEN)
 
 dp = Dispatcher()
 
 
 
-
-
-async def get_public_ip(proxy_url: str = None) -> str:
-    """
-    Получает внешний IP.
-    Если proxy_url указан — через прокси, иначе — напрямую.
-    """
-
-    from aiohttp import ClientSession
-    from aiohttp_socks import ProxyConnector
-
-    connector = None
-    if proxy_url:
-        try:
-            connector = ProxyConnector.from_url(proxy_url)
-        except Exception as e:
-            print(f"⚠️ Proxy connector failed: {e}")
-    
-    async with ClientSession(connector=connector) as session:
-        try:
-            async with session.get('https://api.ipify.org') as resp:
-                ip = await resp.text()
-                return ip
-        except Exception as e:
-            print(f"⚠️ Failed to get IP: {e}")
-            return "unknown"
-        
-        
-
-async def check_proxy():
-    """Проверяет IP через прокси (если есть)"""
-    if PROXY:
-        ip = await get_public_ip(PROXY)
-        print(f"🤖 Bot IP through proxy: {ip}")
-        return ip
-    else:
-        ip = await get_public_ip()
-        print(f"🤖 Bot IP (direct): {ip}")
-        return ip
     
 
 
@@ -75,18 +36,43 @@ async def init_router() -> None:
     dp.include_router(main_router)
 
 
-
+#### Запуск Телеграмм Бота #####
 async def main_bot() -> None:
-    await check_proxy()
+    """ Главная ффункция запуска всего бота """
+    await bot_instance.create_bot()
+    dp.bot = bot_instance.bot
     await init_router()
     await db.connect()
+    telethon_obj = asyncio.create_task(mytelethon.run())
+
 
     try:
-        await dp.start_polling(bot, skip_updates=False)
+        while True:
+            try:
+                if bot_instance.bot is None:
+                    print("Бот не создан, ждём...")
+                    await asyncio.sleep(5)
+                    continue
 
-    except asyncio.CancelledError:
-        print("📢 Бот получил сигнал остановки")
-        raise
+                # Запускаем бота и Telethon одновременно
+                await asyncio.gather(
+                    await dp.start_polling(dp.bot, skip_updates=False),
+                    telethon_obj,
+                )
+
+            except (aiohttp.ClientConnectorError, aiohttp.ClientProxyConnectionError, ProxyError):
+                print("Прокси ошибка, переподключаемся...")
+                await bot_instance.reconnect()
+                dp.bot = bot_instance.bot
+                await asyncio.sleep(5)
+            except Exception as e:
+                print(f"Другая ошибка: {e}")
+                await bot_instance.reconnect()
+                dp.bot = bot_instance.bot
+                await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                print("📢 Бот получил сигнал остановки")
+                raise
 
     finally:
         print("🔒 Закрываем пул БД...")
@@ -97,10 +83,8 @@ async def main_bot() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main_bot())
-
     except KeyboardInterrupt:
         print("\n🛑 Ctrl+C - остановка")
-
     finally:
         print("Завершение работы...")
 

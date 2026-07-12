@@ -1,4 +1,4 @@
-from config import HOST, USER_DB, PASSWORD_DB, DB_NAME, TIME_ZONE
+from config import HOST, USER_DB, PASSWORD_DB, DB_NAME, TIME_ZONE, PORT
 from logs.set_logger import set_logger
 logger = set_logger(name="db")
 import asyncpg
@@ -18,6 +18,7 @@ class Database:
         if self.pool is None:
             self.pool = await asyncpg.create_pool(
                 host=HOST,
+                port=PORT,
                 database=DB_NAME,
                 user=USER_DB,
                 password=PASSWORD_DB,

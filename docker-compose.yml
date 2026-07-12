@@ -4,15 +4,16 @@ services:
 
   postgres:
     image: postgres:14.13 #latest  !15.6
-    container_name: app_postgres
+    container_name: app_postgres_v14
     environment:
       POSTGRES_USER: ${USER_DB}
       POSTGRES_PASSWORD: ${PASSWORD_DB}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "127.0.0.1:5432:5432"
+      # Меняем порт хоста на 25432, если порт 5432 занят локальной БД
+      - "127.0.0.1:25432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v14:/var/lib/postgresql/data
     networks:
       - db-network
 
@@ -34,7 +35,7 @@ services:
         - "8080:80"  # Публикация порта 80 контейнера на порт 8080 хоста
 
 volumes:
-  postgres_data:
+  postgres_data_v14:
 
 networks:
   db-network:

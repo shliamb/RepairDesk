@@ -17,6 +17,7 @@ from database.orders import OrderService
 from pdf.gen_pdf import BuildPDF
 import uuid
 import json
+from handlers.workshop import workshop_panel
 
 router = Router()
 order = OrderService(db)
@@ -53,16 +54,27 @@ class newOrder(StatesGroup):
 
 
 
+# # CANCEL STATE & KEYBOARD TO ALL HANDLERS !!!
+# @router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
+# async def cancel(message: types.Message, state: FSMContext): 
+#     """ Отмена / Cancelled """
+#     await typing(message)
+#     lang = message.from_user.language_code
+#     await state.clear()
+#     if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
+#     else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
+
 # CANCEL STATE & KEYBOARD TO ALL HANDLERS !!!
-@router.message((F.text == CANCEL["ru"]) | (F.text == CANCEL["en"]))
+@router.message((F.text == UI_TEXTS["en"]["cancel"]) | (F.text == UI_TEXTS["ru"]["cancel"]))
 async def cancel(message: types.Message, state: FSMContext): 
     """ Отмена / Cancelled """
-    await typing(message)
+    await state.clear() # Очищаем состояние (если нужно при отмене)
+    # Опционально: пишем, что действие отменено
     lang = message.from_user.language_code
-    await state.clear()
-    if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
-
+    if lang == "ru": await message.answer("Действие отменено. Возвращаем вас в мастерскую...")
+    else: await message.answer("Action canceled. Returning you to the workshop...")
+    # Вызываем логику воркшопа, передавая текущие message и state
+    await workshop_panel(message, state)
 
 
 # SAVE ORDER TO DB

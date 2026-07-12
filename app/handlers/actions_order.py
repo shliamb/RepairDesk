@@ -13,9 +13,11 @@ from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from database.orders import OrderService
 from datetime import datetime
-from config import UI_TEXTS, CURRENCY, ADMIN_ID
+from config import UI_TEXTS, CURRENCY, ADMIN_ID, GET_FEEDBACK
 from keyboards.workshop import build_keyboard
+from handlers.workshop import workshop_panel
 from database import db
+from telethoner import mytelethon
 
 
 router = Router()
@@ -29,16 +31,28 @@ class Action(StatesGroup):
 
 
 
+# # CANCEL STATE & KEYBOARD TO ALL HANDLERS !!!
+# @router.message((F.text == UI_TEXTS["en"]["cancel"]) | (F.text == UI_TEXTS["ru"]["cancel"]))
+# async def cancel(message: types.Message, state: FSMContext): 
+#     """ Отмена / Cancelled """
+#     await typing(message)
+#     lang = message.from_user.language_code
+#     await state.clear()
+#     if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
+#     else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
+
+
 # CANCEL STATE & KEYBOARD TO ALL HANDLERS !!!
 @router.message((F.text == UI_TEXTS["en"]["cancel"]) | (F.text == UI_TEXTS["ru"]["cancel"]))
 async def cancel(message: types.Message, state: FSMContext): 
     """ Отмена / Cancelled """
-    await typing(message)
+    await state.clear() # Очищаем состояние (если нужно при отмене)
+    # Опционально: пишем, что действие отменено
     lang = message.from_user.language_code
-    await state.clear()
-    if lang == "ru": await message.answer("🚫 Отменено", reply_markup=ReplyKeyboardRemove())
-    else: await message.answer("🚫 Cancelled", reply_markup=ReplyKeyboardRemove())
-
+    if lang == "ru": await message.answer("Действие отменено. Возвращаем вас в мастерскую...")
+    else: await message.answer("Action canceled. Returning you to the workshop...")
+    # Вызываем логику воркшопа, передавая текущие message и state
+    await workshop_panel(message, state)
 
 
 
@@ -303,4 +317,58 @@ async def actions_order_tap(order_id: int, action: str, message: types.Message, 
         buttons = [UI_TEXTS[lang]["card"], UI_TEXTS[lang]["cash"], UI_TEXTS[lang]["crypto"], UI_TEXTS[lang]["no_payment"],  UI_TEXTS[lang]["cancel"]]
         await message.answer(message_text, reply_markup = build_keyboard(buttons))
         await state.set_state(Action.pay_method)
+        return
+
+    elif action == "feedback":
+        # Получаем данные заказа и клиента
+        data_order = await order.get_order_id(order_id)
+        client_id = data_order.get("client_id") # UUID клиента в вашей БД
+
+        client_data = await get_user_by_user_id(client_id)
+        username_telegram = client_data.get("username_telegram") # @username клиента
+        
+        # Безопасное получение telegram ID (чтобы не упасть в ошибку, если там None)
+        tg_id_raw = data_order.get("user_telegram")
+        user_telegram = int(tg_id_raw) if tg_id_raw and str(tg_id_raw).isdigit() else None
+
+        # Если нет вообще никаких контактов для связи
+        if not username_telegram and not user_telegram:
+            if lang == "ru": 
+                message_text = "❌ У клиента не указаны Telegram данные (ID или Юзернейм)."
+            else: 
+                message_text = "❌ Client has no Telegram data provided (ID or Username)."
+            await message.answer(message_text)
+            return
+
+        # Формируем текст сообщения СЛУШАТЕЛЮ (клиенту) в зависимости от языка
+        client_message = GET_FEEDBACK[lang]
+
+        # Отправляем через Telethon (метод вернет int-ID при успехе или str-ошибку при неудаче)
+        result = await mytelethon.send_message(
+            message_text=client_message, 
+            telegram_id=user_telegram, 
+            username=username_telegram
+        )
+
+        # Если вернулся ID (число), значит отправка прошла успешно
+        if isinstance(result, int):
+            if lang == "ru":
+                answer_message = "✅ Сообщение успешно отправлено. Telegram ID клиента сохранен/обновлен."
+            else:
+                answer_message = "✅ Message sent successfully. Client Telegram ID saved/updated."
+
+            # Обновляем ID клиента в базе данных, если его там не было или он изменился
+            new_data_client = {"user_id": client_id, "user_telegram": result}
+            if not await edit_client(new_data_client):
+                if lang == "ru":
+                    await message.answer("⚠️ Ошибка при сохранении Telegram ID в базу данных.")
+                else:
+                    await message.answer("⚠️ Error saving Telegram ID to the database.")
+                return
+        else:
+            # Если вернулась строка — это текст ошибки из Telethon (уже локализованный там)
+            answer_message = str(result)
+
+        # Отвечаем мастеру в боте о результате операции
+        await message.answer(answer_message)
         return

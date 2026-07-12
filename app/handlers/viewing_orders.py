@@ -215,7 +215,7 @@ async def action_order(callback: types.CallbackQuery, state: FSMContext):
     id = callback.data.split("_")[-1]
     if not isinstance(id, int): id = int(id)
     else: logger.error(f"{id} is not digit")
-    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["delet"], ["Зап. Отзыва"], UI_TEXTS[lang]["cancel"]]
+    buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["delet"], UI_TEXTS[lang]["feedback"], UI_TEXTS[lang]["cancel"]]
     if lang == "ru": intro_text = f"Выберите действие по заказу:"
     else: intro_text = f"Select the order action:"
     await callback.message.answer(intro_text, reply_markup = build_keyboard(buttons))

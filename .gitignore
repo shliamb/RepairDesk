@@ -14,7 +14,10 @@ json/
 downloads/
 app/config.py
 .requirements.freeze.txt
-
+repair_desk_bot.session
+repair_desk_bot.session-journal
+.env.socks5proxy
+.env.mtproxy
 
 
 

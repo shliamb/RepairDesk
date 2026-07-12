@@ -561,7 +561,7 @@ async def choose_edit_order(message: types.Message, state: FSMContext):
         state_data = await state.get_data()
         id = state_data.get("id")
 
-        buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["delet"], UI_TEXTS[lang]["cancel"]]
+        buttons = [UI_TEXTS[lang]["get_photo"], UI_TEXTS[lang]["get_pdf"], UI_TEXTS[lang]["payd"], UI_TEXTS[lang]["delet"], UI_TEXTS[lang]["feedback"], UI_TEXTS[lang]["cancel"]]
         if lang == "ru": intro_text = f"Выберите действие по заказу:"
         else: intro_text = f"Select the order action:"
 
@@ -1061,6 +1061,8 @@ async def process_action_order(message: types.Message, state: FSMContext):
         action = "payd"
     elif message.text == UI_TEXTS[lang]["delet"]:
         action = "delet"
+    elif message.text == UI_TEXTS[lang]["feedback"]:
+        action = "feedback"
     else:
         if lang == "ru": await message.answer("🚫 Попробуйте еще раз выбрать пункт из меню")
         else: await message.answer("🚫 Try again to select an item from the menu")
