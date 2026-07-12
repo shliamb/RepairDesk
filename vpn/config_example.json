@@ -5,7 +5,9 @@
   "inbounds": [
     {
       "type": "tun",
-      "inet4_address": "172.16.0.1/30",
+      "address": [
+        "172.16.0.1/30"
+      ],
       "mtu": 1400,
       "auto_route": true,
       "strict_route": true,
@@ -16,11 +18,11 @@
     {
       "type": "vless",
       "tag": "vless-out",
-      "server": "26.22.32.35",
+      "server": "2.27.32.35",
       "server_port": 443,
-      "uuid": "7054897878978798799a",
+      "uuid": "70547.......0d9a",
       "flow": "xtls-rprx-vision",
-      "packet_encoding": "xray",
+      "bind_interface": "eth0",
       "tls": {
         "enabled": true,
         "server_name": "www.site.fi",
@@ -30,8 +32,8 @@
         },
         "reality": {
           "enabled": true,
-          "public_key": "j0Pha0.............3mg",
-          "short_id": "a3c.......bbb"
+          "public_key": "j0Ph......mg",
+          "short_id": "a3cd9fe6ce68cbbb"
         }
       }
     }
