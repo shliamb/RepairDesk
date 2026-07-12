@@ -21,36 +21,37 @@ class myTelethon:
         self.current_proxy_index = -1   # индекс последнего успешного прокси
         self.error_limit = ERR_PROXY_LIMIT
 
+
     def _parse_proxy_str(self, proxy_str: str):
         """
         Преобразует строку вида socks5://user:pass@host:port 
-        в кортеж, который понимает Telethon: (тип, хост, порт, rdns, юзер, пароль)
+        в словарь, который Telethon и python-socks поймут идеально.
         """
         parsed = urlparse(proxy_str)
-        return (
-            socks.SOCKS5,       # Тип прокси
-            parsed.hostname,    # Хост / IP
-            parsed.port,        # Порт
-            True,               # True означает, что DNS запросы тоже пойдут через прокси (rdns)
-            parsed.username,    # Логин
-            parsed.password     # Пароль
-        )
+        return {
+            'proxy_type': 'socks5',      # Явно пишем тип строкой
+            'addr': parsed.hostname,     # Хост
+            'port': parsed.port,         # Порт
+            'username': parsed.username, # Логин
+            'password': parsed.password  # Пароль
+        }
 
-    def _connect_proxy(self, proxy_tuple=None):
+
+    def _connect_proxy(self, proxy_dict=None):
         """
-        Создаёт клиента Telethon с указанным SOCKS5 прокси (или без).
+        Создаёт клиента Telethon с указанным SOCKS5 прокси-словарём.
         """
-        if proxy_tuple:
+        if proxy_dict:
             self.client = TelegramClient(
                 'repair_desk_bot',
                 API_ID,
                 API_HASH,
-                proxy=proxy_tuple,     # Передаем наш SOCKS5 кортеж
-                auto_reconnect=False   # Отключаем встроенный reconnect для контроля ротации
+                proxy=proxy_dict,      # Передаем наш красивый словарь
+                auto_reconnect=False
             )
-            # Примечание: параметр connection=... убран, так как для SOCKS5 он не нужен!
         else:
             self.client = TelegramClient('repair_desk_bot', API_ID, API_HASH)
+
 
     async def _try_connect(self):
         """
@@ -76,7 +77,9 @@ class myTelethon:
             proxy_tuple = self._parse_proxy_str(proxy_str)
             
             # Скрываем пароль в логах для безопасности
-            print(f"🔄 Trying SOCKS5 Proxy {proxy_tuple[1]}:{proxy_tuple[2]}...")
+            #print(f"🔄 Trying SOCKS5 Proxy {proxy_tuple[1]}:{proxy_tuple[2]}...")
+            # Вместо proxy_tuple[1] теперь используем ключи словаря:
+            print(f"🔄 Trying SOCKS5 Proxy {proxy_tuple['addr']}:{proxy_tuple['port']}...")
             
             self._connect_proxy(proxy_tuple)
             try:
