@@ -1,78 +1,76 @@
 # master/telethoner/mytelethon.py
 import asyncio
 from urllib.parse import urlparse
-import socks  # Нужен для работы с SOCKS5/HTTP проксями
-from telethon import TelegramClient
+#import socks  # Нужен для работы с SOCKS5/HTTP проксями
+from telethon import TelegramClient, events, connection
 
-from config import API_ID, API_HASH, USE_PROXY, ERR_PROXY_LIMIT
-from proxy.socks5proxy import SOCKS5PROXY_STRINGS
+from config import API_ID, API_HASH, USE_MTPROTO, ERR_PROXY_LIMIT
+#from proxy.socks5proxy import SOCKS5PROXY_STRINGS
+from proxy.mtprotoproxy import MTPROXY_STRINGS
 from logs.set_logger import set_logger
 
-logger = set_logger(name="handlers")
+logger = set_logger(name="telethon")
+
 
 
 
 class myTelethon:
     def __init__(self):
-        # Меняем флаг на общий USE_PROXY и берем SOCKS5 строки
-        self.use_proxy = USE_PROXY
-        self.proxy_strings = SOCKS5PROXY_STRINGS if self.use_proxy else []
+        self.use_proxy = USE_MTPROTO
+        self.proxy_strings = MTPROXY_STRINGS if self.use_proxy else []
         self.client = None
         self.current_proxy_index = -1   # индекс последнего успешного прокси
         self.error_limit = ERR_PROXY_LIMIT
 
 
-    # def _parse_proxy_str(self, proxy_str: str):
-    #     """
-    #     Преобразует строку вида socks5://user:pass@host:port 
-    #     в словарь, который Telethon и python-socks поймут идеально.
-    #     """
-    #     parsed = urlparse(proxy_str)
-    #     return {
-    #         'proxy_type': 'socks5',      # Явно пишем тип строкой
-    #         'addr': parsed.hostname,     # Хост
-    #         'port': parsed.port,         # Порт
-    #         'username': parsed.username, # Логин
-    #         'password': parsed.password  # Пароль
-    #     }
-
     def _parse_proxy_str(self, proxy_str: str):
-        """
-        Преобразует строку прокси в словарь.
-        Меняем тип на 'http', так как прокся отлично понимает этот протокол!
-        """
-        parsed = urlparse(proxy_str)
-        return {
-            'proxy_type': 'http',       # <-- ВОТ ТУТ МЕНЯЕМ 'socks5' НА 'http'
-            'addr': parsed.hostname,
-            'port': parsed.port,
-            'username': parsed.username,
-            'password': parsed.password
-        }
+        """Преобразует строку вида mtproxy://host:port:secret в кортеж (host, port, secret)"""
+        parts = proxy_str.replace('mtproxy://', '').split(':')
+        host = parts[0]
+        port = int(parts[1])
+        secret = parts[2]   # hex-строка
+        return (host, port, secret)
 
 
-    def _connect_proxy(self, proxy_dict=None):
+    def _connect_proxy(self, proxy_tuple=None):
         """
-        Создаёт клиента Telethon с указанным SOCKS5 прокси-словарём.
+        Создаёт клиента Telethon с указанным прокси (или без).
+        Регистрирует обработчик сообщений.
         """
-        if proxy_dict:
+        if proxy_tuple:
+            host, port, secret = proxy_tuple
             self.client = TelegramClient(
-                'repair_desk_bot',
+                'session_name',
                 API_ID,
                 API_HASH,
-                proxy=proxy_dict,      # Передаем наш красивый словарь
-                auto_reconnect=False
+                proxy=(host, port, secret),
+                connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
+                auto_reconnect=False   # отключаем встроенный reconnect
             )
         else:
-            self.client = TelegramClient('repair_desk_bot', API_ID, API_HASH)
+            self.client = TelegramClient('session_name', API_ID, API_HASH)
+
+        # """ Telethon вылавливает все мои сообщения в телеграмм и кидает в очередь """
+        # @self.client.on(events.NewMessage(chats=GROUP_ID))
+        # async def handler(event):
+        #     sender = await event.get_sender()
+        #     message_task = {
+        #         'id': event.sender_id,
+        #         'is_bot': getattr(sender, 'bot', False),
+        #         'bot_message': event.raw_text
+        #     }
+        #     await workers_mess_queues.put(message_task)
+        #     #print(f"📩 New message from group: [{event.sender_id}]: {event.raw_text[-16:]}..")
 
 
     async def _try_connect(self):
         """
-        Перебирает SOCKS5 прокси по кругу, пытается подключиться.
+        Перебирает прокси по кругу (начиная со следующего за последним успешным),
+        пытается подключиться. При успехе сохраняет индекс и возвращает True.
+        Если ни один не подошёл, возвращает False.
         """
         if not self.proxy_strings:
-            # Запуск без прокси
+            # без прокси
             self._connect_proxy(None)
             try:
                 await self.client.connect()
@@ -89,36 +87,28 @@ class myTelethon:
             idx = (start + i) % len(self.proxy_strings)
             proxy_str = self.proxy_strings[idx]
             proxy_tuple = self._parse_proxy_str(proxy_str)
-            
-            # Скрываем пароль в логах для безопасности
-            #print(f"🔄 Trying SOCKS5 Proxy {proxy_tuple[1]}:{proxy_tuple[2]}...")
-            # Вместо proxy_tuple[1] теперь используем ключи словаря:
-            print(f"🔄 Trying HTTP Proxy {proxy_tuple['addr']}:{proxy_tuple['port']}...")
-            
+            print(f"🔄 Trying MTProxy {proxy_tuple[0]}:{proxy_tuple[1]}...")
             self._connect_proxy(proxy_tuple)
             try:
                 await self.client.connect()
                 # Успешно – сохраняем индекс
                 self.current_proxy_index = idx
-                print(f"✅ Connected via HTTP Proxy {proxy_tuple['addr']}:{proxy_tuple['port']}")
+                print(f"✅ Connected via MTProxy {proxy_tuple[0]}:{proxy_tuple[1]}")
                 return True
             except Exception as e:
-                print(f"❌ Failed connection via HTTP: {e}")
-                if self.client:
-                    await self.client.disconnect()
+                print(f"❌ Failed: {e}")
+                await self.client.disconnect()
                 self.client = None
                 continue
 
-        print("❌ No working SOCKS5 Proxy found")
+        print("❌ No working MTProxy found")
         return False
-
-
 
 
     async def run(self):
         """
         Основной цикл: пытается подключиться с ротацией прокси,
-        затем удерживает соединение.
+        затем запускает run_until_disconnected, переподключаясь при обрыве.
         """
         if not await self._try_connect():
             return
@@ -133,7 +123,7 @@ class myTelethon:
                 print(f"⚠️ Telethon connection lost: {e}")
                 consecutive_errors += 1
                 if consecutive_errors > self.error_limit:
-                    # Переключаем прокси на следующий из списка
+                    # Переключаем прокси
                     if not await self._try_connect():
                         print("❌ No working proxy, exiting")
                         break
