@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   vpn-tun:
-    image: ghcr.io/sagernet/sing-box:latest   #1.13.14
+    image: ghcr.io/sagernet/sing-box:1.13.14 # latest
     container_name: vpn-tun
     restart: always
     cap_add:
@@ -40,7 +40,9 @@ services:
       dockerfile: Dockerfile.bot
     container_name: telegram_bot
     restart: always
+    env_file: .env  # Docker Compose сам прочитает файл и прокинет ВСЕ переменные внутрь
     environment:
+      admin_id: ${ADMIN_ID}
       POSTGRES_HOST: postgres  # Будет работать идеально, т.к. VPN-контейнер видит этот хост
       POSTGRES_USER: ${USER_DB}
       POSTGRES_PASSWORD: ${PASSWORD_DB}
