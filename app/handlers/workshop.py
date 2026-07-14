@@ -54,7 +54,7 @@ async def workshop_panel(message: types.Message, state: FSMContext):
         f"{UI_TEXTS[lang]['ready_orders']} {ready}",
         f"{UI_TEXTS[lang]['issued']} {complet}",
         UI_TEXTS[lang]['stat'], 
-        UI_TEXTS[lang]["cancel"]
+        #UI_TEXTS[lang]["cancel"]
     ])
 
     await message.answer(desc_text, reply_markup = build_keyboard(buttons)) 
