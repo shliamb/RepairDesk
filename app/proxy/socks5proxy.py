@@ -14,7 +14,7 @@ def parse_proxy_url(url: str):
     user = qs.get('user', [None])[0]
     password = qs.get('pass', [None])[0]
     if server and port and user and password:
-        return f"socks5://{user}:{password}@{server}:{port}"  # proxy="socks5://14ad79a2e5a9f:31bba1f4c7@89.117.164.236:12324"
+        return f"socks5://{user}:{password}@{server}:{port}" 
     return None
 
 proxies_raw = os.environ.get("SOCKS5_PROXY_URLS", "").split(";")
