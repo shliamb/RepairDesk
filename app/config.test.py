@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+# Бот живёт в сети vpn-tun, поэтому при пересоздании vpn-tun его тоже нужно пересоздать: docker-compose up -d --force-recreate.
 
 
 #### BASIC CONFIG (set it up manually): #######

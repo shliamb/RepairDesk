@@ -1,3 +1,5 @@
+__pycache__/
+*.pyc
 .env
 .venv/
 app/__pycache__/
@@ -19,6 +21,7 @@ repair_desk_bot.session-journal
 .env.socks5proxy
 .env.mtproxy
 vpn/config.json
+xray/config.json
 
 
 

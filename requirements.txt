@@ -22,3 +22,5 @@ aiohttp-socks==0.8.4
 # pip install aiohttp-socks --no-deps  # без флага потянет зависимости
 
 
+# Бот живёт в сети vpn-tun, поэтому при пересоздании vpn-tun его тоже нужно
+# пересоздать: docker-compose up -d --force-recreate

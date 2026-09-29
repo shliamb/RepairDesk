@@ -1,0 +1,42 @@
+{
+  "log": { "loglevel": "info" },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "protocol": "socks",
+      "settings": { "auth": "noauth", "udp": true, "ip": "127.0.0.1" }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "85.100.135.238",
+            "port": 10672,
+            "users": [
+              { "id": "b5fed....8aaf4", "encryption": "none", "flow": "xtls-rprx-vision" }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": true,
+          "serverName": "amd.com",
+          "fingerprint": "firefox",
+          "publicKey": "KjhD-Og....jpmI",
+          "shortId": "218b",
+          "spiderX": "/b68d5bb5ee92a91"
+        },
+        "sockopt": { "interface": "eth0" }
+      }
+    }
+  ]
+}
